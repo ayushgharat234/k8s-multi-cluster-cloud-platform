@@ -78,21 +78,33 @@ catalog:
   rules:
     - allow: [Component, System, API, Resource, Location]
   locations:
-    # Local example data, file locations are relative to the backend process, typically `packages/backend`
+    # Platform Catalog
     - type: file
-      target: ../../examples/entities.yaml
+      target: ../catalog/groups.yaml
+      rules:
+        - allow: [Group]
+    - type: file
+      target: ../catalog/users.yaml
+      rules:
+        - allow: [User]
+    - type: file
+      target: ../catalog/domains.yaml
+      rules:
+        - allow: [Domain, System]
 
-    # Local example template
+    # Service Templates
     - type: file
-      target: ../../examples/template/template.yaml
+      target: ../templates/go-service/template.yaml
       rules:
         - allow: [Template]
-
-    # Local example organizational data
     - type: file
-      target: ../../examples/org.yaml
+      target: ../templates/node-service/template.yaml
       rules:
-        - allow: [User, Group]
+        - allow: [Template]
+    - type: file
+      target: ../templates/python-service/template.yaml
+      rules:
+        - allow: [Template]
 
     ## Uncomment these lines to add more example data
     # - type: url
