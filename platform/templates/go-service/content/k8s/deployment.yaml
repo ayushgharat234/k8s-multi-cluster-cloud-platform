@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${{ values.name }}
+  namespace: default
+  labels:
+    app: ${{ values.name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ${{ values.name }}
+  template:
+    metadata:
+      labels:
+        app: ${{ values.name }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532 # Distroless nonroot user
+        fsGroup: 65532
+      containers:
+        - name: ${{ values.name }}
+          image: ${{ values.name }}:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          # Security: Drop all capabilities, read-only root FS
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          # Reliability: Resource Requests & Limits
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          # Availability: Probes
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10

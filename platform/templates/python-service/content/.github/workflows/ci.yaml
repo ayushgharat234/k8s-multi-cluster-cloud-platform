@@ -1,0 +1,25 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Build Docker Image
+        run: docker build . --file Dockerfile --tag ${{ values.name }}:latest
+
+      # In a real scenario, you would push to GCR/ECR here
+      # - name: Push Docker Image
+      #   run: docker push ${{ values.name }}:latest
+      
+      - name: Scan with Trivy (Security)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ values.name }}:latest'
+          format: 'table'
+          exit-code: '0' # Don't fail build yet, just report
