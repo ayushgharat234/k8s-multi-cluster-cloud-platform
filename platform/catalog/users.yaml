@@ -1,0 +1,21 @@
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: ayush-gharat
+spec:
+  profile:
+    displayName: Ayush Gharat
+    email: ayushgharat234@gmail.com
+    picture: https://avatars.githubusercontent.com/u/12345678?v=4
+  memberOf: [platform-engineering]
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: ayush-gharat
+spec:
+  profile:
+    displayName: Ayush Gharat
+    email: ayushgharat234@gmail.com
+  memberOf: [product-team-a]

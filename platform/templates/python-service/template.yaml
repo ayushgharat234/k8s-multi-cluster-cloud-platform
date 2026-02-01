@@ -11,6 +11,8 @@ metadata:
 spec:
   owner: platform-engineering
   type: service
+
+  # These parameters are displayed to the user in the Backstage UI
   parameters:
     - title: Service Details
       required:
@@ -31,6 +33,15 @@ spec:
           ui:options:
             allowedKinds:
               - Group
+        system:
+          title: System
+          type: string
+          description: System this component belongs to
+          ui:field: EntityPicker
+          ui:options:
+            allowedKinds:
+              - System
+            defaultKind: System
     - title: Repository Location
       required:
         - repoUrl
@@ -42,6 +53,8 @@ spec:
           ui:options:
             allowedHosts:
               - github.com
+
+  # These steps are executed by the Scaffolder
   steps:
     - id: fetch-base
       name: Fetch Base
@@ -51,6 +64,7 @@ spec:
         values:
           name: ${{ parameters.name }}
           owner: ${{ parameters.owner }}
+          system: ${{ parameters.system }}
 
     - id: publish
       name: Publish
@@ -67,6 +81,8 @@ spec:
       input:
         repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
         catalogInfoPath: '/catalog-info.yaml'
+
+  # Outputs are displayed to the user after the template finishes
   output:
     links:
       - title: Repository

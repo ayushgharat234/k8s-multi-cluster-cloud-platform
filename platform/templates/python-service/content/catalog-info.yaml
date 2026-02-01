@@ -10,6 +10,6 @@ spec:
   type: service
   lifecycle: experimental
   owner: ${{ values.owner }}
-  system: platform-engineering
+  system: ${{ values.system }}
   providesApis:
     - ${{ values.name }}-api

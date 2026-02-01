@@ -1,0 +1,19 @@
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: platform-engineering
+  description: The team that builds the IDP
+spec:
+  type: team
+  children: []
+  
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: product-team-a
+  description: The A-Team
+spec:
+  type: team
+  parent: platform-engineering
+  children: []

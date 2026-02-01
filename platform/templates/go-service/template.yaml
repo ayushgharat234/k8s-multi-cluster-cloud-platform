@@ -1,73 +1,85 @@
-apiVersion: scaffolder.backstage.io/v1beta3 
-kind: Template 
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
 metadata:
-    name: create-go-service 
-    title: Go (Golang) Service
-    description: Create a high performance Go service with best practices.
-    tags:
-        - go
-        - golang 
-spec: 
-    owner: platform-engineering
-    type: service 
-    parameters: 
-        - title: Service Details 
-          required: 
-            - name
-            - owner 
-          properties:
-            name: 
-                title: Name 
-                type: string 
-                description: Unique name for the service
-                ui:autofocus: true
-            owner:
-                title: Owner 
-                type: string 
-                ui:field: OwnerPicker
-                ui:options:
-                    allowedKinds:
-                        - Group 
-        - title: Repository Location 
-          required: 
-            - repoUrl
-          properties:
-            repoUrl:
-            title: Repository Location
-            type: string
-            ui:field: RepoUrlPicker
-            ui:options:
-                allowedHosts:
-                - github.com
-    steps:
-        - id: fetch-base 
-          name: Fetch Base Template 
-          action: fetch:template
-          input: 
-            url: ./content
-            values:
-                name: ${{ parameters.name }}
-                owner: ${{ parameters.owner }}
-
-        - id: publish 
-          name: Publish 
-          action: publish:github
-          input:
+  name: create-go-service
+  title: Go (Golang) Service
+  description: Create a high-performance Go microservice.
+  tags:
+    - go
+    - golang
+spec:
+  owner: platform-engineering
+  type: service
+  parameters:
+    - title: Service Details
+      required:
+        - name
+        - owner
+      properties:
+        name:
+          title: Name
+          type: string
+          description: Unique name of the component
+          ui:autofocus: true
+        owner:
+          title: Owner
+          type: string
+          ui:field: OwnerPicker
+          ui:options:
+            allowedKinds:
+              - Group
+        system:
+          title: System
+          type: string
+          description: System this component belongs to
+          ui:field: EntityPicker
+          ui:options:
+            allowedKinds:
+              - System
+            defaultKind: System
+    - title: Repository Location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
             allowedHosts:
-                - github.com 
-            description: This is $${ parameters.name } service created using Backstage.
-            repoUrl: ${{ parameters.repoUrl }}
-        
-        - id: register
-          name: Register 
-          action: catalog:register
-          input: 
-            repoContentsUrl: $${ steps.publish.output.repoContentsUrl }
-            catalogPath: '/catalog-info.yaml'
-    output:
-        links: 
-            - title: Repository 
-              url: ${{ steps.publish.output.remoteUrl }}
-            - title: Open in Catalog 
-              icon: catalog 
-              entityRef: ${{ steps.register.output.entityRef }}
+              - github.com
+
+  steps:
+    - id: fetch-base
+      name: Fetch Base
+      action: fetch:template
+      input:
+        url: ./content
+        values:
+          name: ${{ parameters.name }}
+          owner: ${{ parameters.owner }}
+          system: ${{ parameters.system }}
+
+    - id: publish
+      name: Publish
+      action: publish:github
+      input:
+        allowedHosts:
+          - github.com
+        description: This is ${{ parameters.name }}
+        repoUrl: ${{ parameters.repoUrl }}
+
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps.publish.output.remoteUrl }}
+      - title: Open in Catalog
+        icon: catalog
+        entityRef: ${{ steps.register.output.entityRef }}

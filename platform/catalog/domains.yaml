@@ -1,0 +1,17 @@
+apiVersion: backstage.io/v1alpha1
+kind: Domain
+metadata:
+  name: logistics
+  description: Everything related to moving goods
+spec:
+  owner: platform-engineering
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: shipment-tracking
+  description: Tracking packages in real-time
+spec:
+  owner: product-team-a
+  domain: logistics
