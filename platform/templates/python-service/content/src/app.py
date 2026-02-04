@@ -1,25 +1,22 @@
-from flask import Flask, jsonify
-import os
+from fastapi import FastAPI
+from pydantic import BaseModel
+from prometheus_client import make_wsgi_app
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
-app = Flask(__name__)
+app = FastAPI()
 
-@app.route('/')
-def hello():
-    return jsonify({
-        "message": "Hello from ${{ values.name }}!",
-        "status": "Running",
-        "version": "1.0.0"
-    })
+class HealthCheck(BaseModel):
+    status: str = "ok"
+    version: str = "1.0.0"
 
-@app.route('/health') # Keep for backward compatibility
-@app.route('/healthz')
-def health():
-    return jsonify({"status": "alive"})
+@app.get("/health")
+def health_check() -> HealthCheck:
+    return HealthCheck(status="ok")
 
-@app.route('/ready')
-def ready():
-    return jsonify({"status": "ready"})
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+@app.get("/")
+def read_root():
+    return {"message": "Hello from ${{ values.name }}!"}
+# Export Prometheus metrics on /metrics
+app_dispatch = DispatcherMiddleware(app, {
+    '/metrics': make_wsgi_app()
+})

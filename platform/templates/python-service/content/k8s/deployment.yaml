@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ${{ values.name }}
-  namespace: default
   labels:
     app: ${{ values.name }}
 spec:
@@ -15,38 +14,17 @@ spec:
       labels:
         app: ${{ values.name }}
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 65532
-        fsGroup: 65532
       containers:
         - name: ${{ values.name }}
-          image: ${{ values.name }}:latest
-          imagePullPolicy: IfNotPresent
+          image: ${{ values.registry }}/${{ values.name }}:latest
           ports:
-            - containerPort: 5000
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true # Python distroless can be read-only if no temp writes
-            capabilities:
-              drop:
-                - ALL
-          resources:
-            requests:
-              cpu: "100m"
-              memory: "128Mi"
-            limits:
-              cpu: "500m"
-              memory: "256Mi"
+            - containerPort: 8080
           livenessProbe:
             httpGet:
               path: /health
-              port: 5000
-            initialDelaySeconds: 10
-            periodSeconds: 10
+              port: 8080
+            initialDelaySeconds: 30
           readinessProbe:
             httpGet:
-              path: /
-              port: 5000
-            initialDelaySeconds: 10
-            periodSeconds: 10
+              path: /health
+              port: 8080

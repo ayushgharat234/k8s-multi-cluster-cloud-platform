@@ -1,30 +1,35 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: create-python-service
-  title: Python Flask Service
-  description: Create a production-ready Python Flask microservice with Docker and K8s manifests.
+  name: python-service-template
+  title: Python Service (FastAPI)
+  description: Scaffolds a production-ready Python FastAPI service with Docker support.
   tags:
     - python
-    - flask
-    - recommended
+    - fastapi
+    - microservice
 spec:
-  owner: platform-engineering
+  owner: user:guest
   type: service
-
-  # These parameters are displayed to the user in the Backstage UI
+  # INPUT parameters displayed in the Backstage UI
   parameters:
     - title: Service Details
       required:
         - name
+        - description
         - owner
       properties:
         name:
           title: Name
           type: string
-          description: Unique name of the component
+          description: Unique name of the service
           ui:autofocus: true
-          pattern: '^[a-z0-9-]+$'
+          errorMessage:
+            required: 'Extension is required'
+        description:
+          title: Description
+          type: string
+          description: Help others understand what this website is for.
         owner:
           title: Owner
           type: string
@@ -33,15 +38,7 @@ spec:
           ui:options:
             allowedKinds:
               - Group
-        system:
-          title: System
-          type: string
-          description: System this component belongs to
-          ui:field: EntityPicker
-          ui:options:
-            allowedKinds:
-              - System
-            defaultKind: System
+    
     - title: Repository Location
       required:
         - repoUrl
@@ -53,9 +50,9 @@ spec:
           ui:options:
             allowedHosts:
               - github.com
-
-  # These steps are executed by the Scaffolder
+  # ACTIONS to perform
   steps:
+    # 1. Fetch the skeleton code from the 'content' directory
     - id: fetch-base
       name: Fetch Base
       action: fetch:template
@@ -63,26 +60,26 @@ spec:
         url: ./content
         values:
           name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
           owner: ${{ parameters.owner }}
-          system: ${{ parameters.system }}
-
+          destination: ${{ parameters.repoUrl | parseRepoUrl }}
+    # 2. Publish the code to GitHub
     - id: publish
       name: Publish
       action: publish:github
       input:
-        allowedHosts:
-          - github.com
-        description: This is ${{ parameters.name }}
+        allowedHosts: ['github.com']
+        description: ${{ parameters.description }}
         repoUrl: ${{ parameters.repoUrl }}
-
+        repoVisibility: public # or 'private'
+    # 3. Register the new component in the Catalog
     - id: register
       name: Register
       action: catalog:register
       input:
         repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
         catalogInfoPath: '/catalog-info.yaml'
-
-  # Outputs are displayed to the user after the template finishes
+  # OUTPUT links shown to the user
   output:
     links:
       - title: Repository

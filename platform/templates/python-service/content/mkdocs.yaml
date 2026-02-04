@@ -1,0 +1,4 @@
+site_name: ${{ values.name }}
+site_description: ${{ values.description }}
+plugins:
+  - techdocs-core

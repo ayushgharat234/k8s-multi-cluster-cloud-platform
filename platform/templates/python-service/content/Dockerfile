@@ -1,26 +1,16 @@
-# Build Stage
-FROM python:3.11-slim AS builder
+# Stage 1: Build
+FROM dhi.io/python:3-debian13-sfw-ent-dev as builder
 WORKDIR /app
-
 COPY requirements.txt .
-# Install dependencies to a temporary location
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
-
-# Final Stage (Distroless)
-# Contains minimal Python runtime, no shell, no package manager
-FROM gcr.io/distroless/python3-debian12
+RUN pip install --user --no-cache-dir -r requirements.txt
+# Stage 2: Runtime
+FROM dhi.io/python:3-debian13-sfw-ent-dev
 WORKDIR /app
-
-# Copy installed python packages
-COPY --from=builder /install /usr/local
-# Copy application code
-COPY src/ /app
-
-# Distroless runs as non-root by default (usually), but let's be explicit
-USER 65532:65532
-
-# Python buffers stdout, which delays logs in K8s. This fixes it.
-ENV PYTHONUNBUFFERED=1
-
-EXPOSE 5000
-ENTRYPOINT ["python3", "app.py"]
+# Copy installed packages from builder
+COPY --from=builder /root/.local /root/.local
+ENV PATH=/root/.local/bin:$PATH
+COPY . .
+# Security: Run as non-root user (provided by the hardened image or default user)
+USER 1001
+EXPOSE 8080
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
