@@ -1,55 +1,42 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: create-node-service
-  title: Node.js Express Service
-  description: Create a production-ready Node.js Express microservice.
+  name: node-service-template
+  title: Node.js Service (Express)
+  description: Scaffolds a production-ready Node.js Express service with hardened Docker image.
   tags:
     - nodejs
     - express
-    - javascript
+    - microservice
 spec:
-  owner: platform-engineering
+  owner: user:guest
   type: service
   parameters:
     - title: Service Details
-      required:
-        - name
-        - owner
+      required: [name, description, owner]
       properties:
-        name:
+        name: 
           title: Name
           type: string
-          description: Unique name of the component
           ui:autofocus: true
+        description:
+          title: Description
+          type: string
         owner:
           title: Owner
           type: string
           ui:field: OwnerPicker
           ui:options:
-            allowedKinds:
-              - Group
-        system:
-          title: System
-          type: string
-          description: System this component belongs to
-          ui:field: EntityPicker
-          ui:options:
-            allowedKinds:
-              - System
-            defaultKind: System
+            allowedKinds: [Group]
     - title: Repository Location
-      required:
-        - repoUrl
+      required: [repoUrl]
       properties:
         repoUrl:
           title: Repository Location
           type: string
           ui:field: RepoUrlPicker
           ui:options:
-            allowedHosts:
-              - github.com
-
+            allowedHosts: [github.com]
   steps:
     - id: fetch-base
       name: Fetch Base
@@ -58,25 +45,23 @@ spec:
         url: ./content
         values:
           name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
           owner: ${{ parameters.owner }}
-          system: ${{ parameters.system }}
-
+          destination: ${{ parameters.repoUrl | parseRepoUrl }}
     - id: publish
       name: Publish
       action: publish:github
       input:
-        allowedHosts:
-          - github.com
-        description: This is ${{ parameters.name }}
+        allowedHosts: ['github.com']
+        description: ${{ parameters.description }}
         repoUrl: ${{ parameters.repoUrl }}
-
+        repoVisibility: public
     - id: register
       name: Register
       action: catalog:register
       input:
         repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
         catalogInfoPath: '/catalog-info.yaml'
-
   output:
     links:
       - title: Repository

@@ -1,23 +1,20 @@
 const express = require('express');
+const client = require('prom-client');
 const app = express();
-const port = process.env.PORT || 3000;
-
+const port = 8080;
+// Metrics
+const collectDefaultMetrics = client.collectDefaultMetrics;
+collectDefaultMetrics();
 app.get('/', (req, res) => {
-  res.json({
-    message: "Hello from ${{ values.name }}!",
-    status: "Running",
-    version: "1.0.0"
-  });
+  res.send('Hello from ${{ values.name }}!');
 });
-
-app.get('/healthz', (req, res) => {
-  res.status(200).json({ status: "alive" });
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', version: '1.0.0' });
 });
-
-app.get('/ready', (req, res) => {
-  res.status(200).json({ status: "ready" });
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', client.register.contentType);
+  res.end(await client.register.metrics());
 });
-
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  console.log(`App listening at http://localhost:${port}`);
 });

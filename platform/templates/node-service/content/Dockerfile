@@ -1,29 +1,14 @@
 # Build Stage
-# Use a full Node.js image to build dependencies
-FROM node:20-bookworm AS builder
+FROM dhi.io/node:25-debian13-sfw-ent-dev AS build
 WORKDIR /app
-
-# Copy package files first to leverage Docker cache for dependencies
 COPY package*.json ./
-
-# Install only production dependencies for a smaller final image
-# 'npm ci' ensures a deterministic install based on package-lock.json
 RUN npm ci --only=production
 
-# Final Stage (Distroless)
-# Use a distroless image for better security (no shell, smaller size)
-# See: https://github.com/GoogleContainerTools/distroless
-FROM gcr.io/distroless/nodejs20-debian12
+# Runtime Stage
+FROM dhi.io/node:25-debian13-sfw-ent-dev
 WORKDIR /app
-
-# Copy installed node_modules from the builder stage
-COPY --from=builder /app/node_modules ./node_modules
-
-# Copy application source code
+COPY --from=build /app/node_modules ./node_modules
 COPY . .
-
-# Run as non-root user for security (65532 is the nonroot user in distroless)
-USER 65532
-
-EXPOSE 3000
-CMD ["index.js"]
+USER 1001
+EXPOSE 8080
+CMD ["node", "index.js"]
