@@ -1,23 +1,16 @@
 # Build Stage
-FROM golang:1.22-alpine AS builder
+FROM dhi.io/golang:1-debian13-sfw-ent-dev AS builder
 WORKDIR /app
-
-# Download dependencies first (caching)
-COPY go.mod ./
-# COPY go.sum ./
+COPY go.mod go.sum ./
 RUN go mod download
-
-# Build the application
 COPY . .
-# CGO_ENABLED=0 is required for Distroless (static binary)
-RUN CGO_ENABLED=0 GOOS=linux go build -o main .
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server
 
-# Final Stage (Distroless - Secure & Minimal)
-# Use 'static' for Go apps (no libc needed)
-FROM gcr.io/distroless/static:nonroot
-WORKDIR /
-COPY --from=builder /app/main .
-USER 65532:65532
-
+# Runtime Stage
+FROM dhi.io/golang:1-debian13-sfw-ent-dev
+WORKDIR /app
+COPY --from=builder /app/server .
+# Security: Run as non-root user
+USER 1001
 EXPOSE 8080
-ENTRYPOINT ["/main"]
+CMD ["./server"]
