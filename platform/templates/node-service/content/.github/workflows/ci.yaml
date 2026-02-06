@@ -1,0 +1,20 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Build Docker Image
+        run: docker build . --file Dockerfile --tag ${{ values.name }}:latest
+
+      - name: Scan with Trivy (Security)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ values.name }}:latest'
+          format: 'table'

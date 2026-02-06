@@ -1,0 +1,79 @@
+# --- Departments ---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: engineering
+  description: The Engineering Department
+spec:
+  type: department
+  children:
+    - platform-tribe
+    - product-tribe
+
+# --- Tribes ---
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: platform-tribe
+  description: Platform & Infrastructure Tribe
+spec:
+  type: tribe
+  parent: engineering
+  children:
+    - sre-team
+    - idp-team
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: product-tribe
+  description: Product Development Tribe
+spec:
+  type: tribe
+  parent: engineering
+  children:
+    - payment-service-team
+    - logistics-team
+
+# --- Squads (Teams) ---
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: sre-team
+  description: Site Reliability Engineering
+spec:
+  type: squad
+  parent: platform-tribe
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: idp-team
+  description: Internal Developer Portal Team
+spec:
+  type: squad
+  parent: platform-tribe
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: payment-service-team
+  description: Checkout & Payments
+spec:
+  type: squad
+  parent: product-tribe
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: logistics-team
+  description: Shipping & Inventory
+spec:
+  type: squad
+  parent: product-tribe
+  children: []
