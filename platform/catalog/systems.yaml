@@ -1,0 +1,35 @@
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: internal-developer-portal
+  description: Backstage and related tools
+spec:
+  owner: idp-team
+  domain: platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: kubernetes-clusters
+  description: GKE and EKS Clusters
+spec:
+  owner: sre-team
+  domain: platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: payment-gateway
+  description: Stripe & PayPal Integrations
+spec:
+  owner: payment-service-team
+  domain: e-commerce
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: shipment-tracking
+  description: Real-time logistics
+spec:
+  owner: logistics-team
+  domain: supply-chain

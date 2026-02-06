@@ -90,7 +90,11 @@ catalog:
     - type: file
       target: ../catalog/domains.yaml
       rules:
-        - allow: [Domain, System]
+        - allow: [Domain]
+    - type: file
+      target: ../catalog/systems.yaml
+      rules:
+        - allow: [System]
 
     # Service Templates
     - type: file

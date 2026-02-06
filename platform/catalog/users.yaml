@@ -1,14 +1,13 @@
 apiVersion: backstage.io/v1alpha1
 kind: User
 metadata:
-  name: ayush-gharat
+  name: guest
 spec:
   profile:
-    displayName: Ayush Gharat
-    email: ayushgharat234@gmail.com
-    picture: https://avatars.githubusercontent.com/u/12345678?v=4
-  memberOf: [platform-engineering]
-
+    displayName: Guest User
+    email: guest@example.com
+    picture: https://avatars.githubusercontent.com/u/0?v=4
+  memberOf: []
 ---
 apiVersion: backstage.io/v1alpha1
 kind: User
@@ -18,4 +17,27 @@ spec:
   profile:
     displayName: Ayush Gharat
     email: ayushgharat234@gmail.com
-  memberOf: [product-team-a]
+    picture: https://api.dicebear.com/7.x/avataaars/svg?seed=Ayush
+  memberOf: [sre-team, idp-team]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: dev-bob
+spec:
+  profile:
+    displayName: Bob Builder
+    email: bob@dhi.io
+    picture: https://api.dicebear.com/7.x/avataaars/svg?seed=Bob
+  memberOf: [payment-service-team]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: dev-alice
+spec:
+  profile:
+    displayName: Alice Logistics
+    email: alice@dhi.io
+    picture: https://api.dicebear.com/7.x/avataaars/svg?seed=Alice
+  memberOf: [logistics-team]

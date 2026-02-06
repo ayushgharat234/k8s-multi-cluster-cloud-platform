@@ -1,17 +1,23 @@
 apiVersion: backstage.io/v1alpha1
 kind: Domain
 metadata:
-  name: logistics
-  description: Everything related to moving goods
+  name: platform
+  description: Core Infrastructure and Developer Experience
 spec:
-  owner: platform-engineering
-
+  owner: platform-tribe
 ---
 apiVersion: backstage.io/v1alpha1
-kind: System
+kind: Domain
 metadata:
-  name: shipment-tracking
-  description: Tracking packages in real-time
+  name: e-commerce
+  description: Online Store & Money
 spec:
-  owner: product-team-a
-  domain: logistics
+  owner: product-tribe
+---
+apiVersion: backstage.io/v1alpha1
+kind: Domain
+metadata:
+  name: supply-chain
+  description: Moving bits to atoms
+spec:
+  owner: product-tribe
