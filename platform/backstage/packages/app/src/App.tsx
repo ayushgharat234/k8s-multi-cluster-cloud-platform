@@ -58,7 +58,25 @@ const app = createApp({
     });
   },
   components: {
-    SignInPage: props => <SignInPage {...props} auto providers={['guest']} />,
+    import { googleAuthApiRef } from '@backstage/core-plugin-api';
+
+    // ...
+
+    SignInPage: props => (
+      <SignInPage
+        {...props}
+        auto
+        providers={[
+          'guest',
+          {
+            id: 'google-auth-provider',
+            title: 'Google',
+            message: 'Sign in using Google',
+            apiRef: googleAuthApiRef,
+          },
+        ]}
+      />
+    ),
   },
 });
 

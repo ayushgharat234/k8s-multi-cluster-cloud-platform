@@ -29,8 +29,16 @@ backend:
       #     $file: <file-path>/ca/server.crt
 
 auth:
+  environment: production
   providers:
-    guest: {}
+    google:
+      production:
+        clientId: ${GOOGLE_AUTH_CLIENT_ID}
+        clientSecret: ${GOOGLE_AUTH_CLIENT_SECRET}
+        signIn:
+          resolvers:
+            - resolver: emailMatchingUserEntityProfileEmail
+    guest: null # Disable guest access in production
 
 catalog:
   # Overrides the default list locations from app-config.yaml as these contain example data.

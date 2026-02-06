@@ -2727,6 +2727,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@backstage/plugin-auth-backend-module-google-provider@npm:^0.3.11":
+  version: 0.3.11
+  resolution: "@backstage/plugin-auth-backend-module-google-provider@npm:0.3.11"
+  dependencies:
+    "@backstage/backend-plugin-api": "npm:^1.6.2"
+    "@backstage/plugin-auth-node": "npm:^0.6.12"
+    google-auth-library: "npm:^9.0.0"
+    passport-google-oauth20: "npm:^2.0.0"
+    zod: "npm:^3.25.76"
+  checksum: 10c0/a6d56840f76957e336184205b79435ef6d464b71fee6b909f6b3863f88c2489d3bb436841da2a7702ff8f5804631f13b72abdb3bed32ef7162f3a8a7dbee034d
+  languageName: node
+  linkType: hard
+
 "@backstage/plugin-auth-backend-module-guest-provider@npm:^0.2.15":
   version: 0.2.15
   resolution: "@backstage/plugin-auth-backend-module-guest-provider@npm:0.2.15"
@@ -15407,6 +15420,7 @@ __metadata:
     "@backstage/plugin-app-backend": "npm:^0.5.10"
     "@backstage/plugin-auth-backend": "npm:^0.26.0"
     "@backstage/plugin-auth-backend-module-github-provider": "npm:^0.4.0"
+    "@backstage/plugin-auth-backend-module-google-provider": "npm:^0.3.11"
     "@backstage/plugin-auth-backend-module-guest-provider": "npm:^0.2.15"
     "@backstage/plugin-auth-node": "npm:^0.6.11"
     "@backstage/plugin-catalog-backend": "npm:^3.3.1"
@@ -20501,7 +20515,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"google-auth-library@npm:^9.3.0, google-auth-library@npm:^9.6.3":
+"google-auth-library@npm:^9.0.0, google-auth-library@npm:^9.3.0, google-auth-library@npm:^9.6.3":
   version: 9.15.1
   resolution: "google-auth-library@npm:9.15.1"
   dependencies:
@@ -26615,6 +26629,15 @@ __metadata:
   dependencies:
     passport-oauth2: "npm:1.x.x"
   checksum: 10c0/70c763f40392f15509373d43014f4c32af8f4fa0a290c74f4b0125208c7aff5a0d55c16ead5663a964653622c759fa70adbc58e417577b206deb9a5a255b528c
+  languageName: node
+  linkType: hard
+
+"passport-google-oauth20@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "passport-google-oauth20@npm:2.0.0"
+  dependencies:
+    passport-oauth2: "npm:1.x.x"
+  checksum: 10c0/158930bb97a48431aa0dcff453c3b698742ed51e2d590c362cb5d4ae7715cfb4fb1feae31b007aef0bc8435edc8ff678853c044b139da827756f3b5f3b597c7f
   languageName: node
   linkType: hard
 
