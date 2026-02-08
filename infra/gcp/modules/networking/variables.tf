@@ -32,3 +32,15 @@ variable "services_cidr" {
   description = "The secondary CIDR range for Services"
   type        = string
 }
+
+variable "service_project_ids" {
+  description = "List of Service Project IDs (Tenants) that need access"
+  type        = list(string)
+  default     = []
+}
+
+variable "service_project_numbers" {
+  description = "List of Service Project Numbers (Tenants) that need access"
+  type        = list(string)
+  default     = []
+}
