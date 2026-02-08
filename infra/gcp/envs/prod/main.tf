@@ -14,7 +14,44 @@ module "networking" {
   service_project_numbers = var.service_project_numbers
 }
 
-provider "google" {
-  project = var.project_id
-  region  = var.region
+# --- Cluster 1: Management (Crossplane) ---
+module "gke_mgmt" {
+  source = "../../modules/gke"
+
+  project_id   = var.management_project_id
+  region       = var.region
+  cluster_name = "platform-mgmt-prod-01"
+
+  network_self_link             = module.networking.network_self_link
+  subnet_self_link              = module.networking.subnet_self_link
+  pods_secondary_range_name     = "gke-pods"
+  services_secondary_range_name = "gke-services"
+}
+
+# --- Cluster 2: Tenant 1 (e.g. Americas) ---
+module "gke_tenant_1" {
+  source = "../../modules/gke"
+
+  project_id   = var.tenant_1_project_id
+  region       = var.region
+  cluster_name = "platform-tenant-prod-01"
+
+  network_self_link             = module.networking.network_self_link
+  subnet_self_link              = module.networking.subnet_self_link
+  pods_secondary_range_name     = "gke-pods"
+  services_secondary_range_name = "gke-services"
+}
+
+# --- Cluster 3: Tenant 2 (e.g. Europe) ---
+module "gke_tenant_2" {
+  source = "../../modules/gke"
+
+  project_id   = var.tenant_2_project_id
+  region       = var.region
+  cluster_name = "platform-tenant-prod-02"
+
+  network_self_link             = module.networking.network_self_link
+  subnet_self_link              = module.networking.subnet_self_link
+  pods_secondary_range_name     = "gke-pods"
+  services_secondary_range_name = "gke-services"
 }
