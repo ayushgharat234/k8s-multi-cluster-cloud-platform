@@ -8,7 +8,7 @@ You are spot on about Kubernetes. It is not just "one of them"—it has effectiv
 
 ## Project Description
 
-This repository, **`k8s-multi-cluster-multi-cloud-platform`**, serves as the **Platform Engineering (Major)** component of our Zero Trust ecosystem.
+This repository, **`k8s-multi-cluster-cloud-platform`**, serves as the **Platform Engineering (Major)** component of our Zero Trust ecosystem.
 
 While we begin with a foundational implementation, the architecture is designed to scale into an enterprise-grade **Internal Developer Platform (IDP)** capable of handling multi-cloud workloads with strict Zero Trust security principles.
 

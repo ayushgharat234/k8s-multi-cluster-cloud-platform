@@ -4,7 +4,7 @@
 global:
   domain: backstage.dhi.io
 
-# 1. High Availability (Replicas & Affinity)
+# High Availability (Replicas & Affinity)
 replicaCount: 3
 topologySpreadConstraints:
   - maxSkew: 1
@@ -14,7 +14,7 @@ topologySpreadConstraints:
       matchLabels:
         app.kubernetes.io/name: backstage
 
-# 2. Database Connection (Cloud SQL Proxy Sidecar)
+# Database Connection (Cloud SQL Proxy Sidecar)
 postgresql:
   enabled: false # We use External Cloud SQL
 
@@ -28,7 +28,7 @@ extraContainers:
       runAsNonRoot: true
       runAsUser: 65532
 
-# 3. Application Configuration (app-config.yaml injection)
+# Application Configuration (app-config.yaml injection)
 appConfig:
   app:
     baseUrl: https://backstage.dhi.io
@@ -57,7 +57,7 @@ appConfig:
         organization: dhi-io
         catalogPath: /catalog-info.yaml
 
-# 4. Ingress (Global Load Balancer)
+# Ingress (Global Load Balancer)
 ingress:
   enabled: true
   className: gce
@@ -71,7 +71,7 @@ ingress:
         - path: /
           pathType: Prefix
 
-# 5. Service Account (Workload Identity)
+# Service Account (Workload Identity)
 serviceAccount:
   create: true
   name: backstage-backend

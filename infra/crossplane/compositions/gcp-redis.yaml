@@ -1,0 +1,30 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: gcp-redis-production
+  labels:
+    provider: gcp
+    type: production
+spec:
+  compositeTypeRef:
+    apiVersion: cache.gcp.dhi.io/v1alpha1
+    kind: XRedisInstance
+  resources:
+    - name: cloud-memorystore-redis
+      base:
+        apiVersion: redis.gcp.upbound.io/v1beta1
+        kind: Instance
+        spec:
+          forProvider:
+            region: us-central1
+            memorySizeGb: 1
+            tier: STANDARD_HA
+            authorizedNetwork: projects/shared-vpc-project/global/networks/platform-shared-vpc-prod
+            connectMode: PRIVATE_SERVICE_ACCESS
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.parameters.memoryGB
+          toFieldPath: spec.forProvider.memorySizeGb
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.parameters.tier
+          toFieldPath: spec.forProvider.tier

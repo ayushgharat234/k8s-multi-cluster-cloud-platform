@@ -1,21 +1,21 @@
 steps:
-  # 1. Test (Go)
+  # Test (Go)
   - name: 'golang:1.19'
     id: 'test'
     entrypoint: 'bash'
     args: ['-c', 'go test ./...']
 
-  # 2. Build Container Image
+  # Build Container Image
   - name: 'gcr.io/cloud-builders/docker'
     id: 'build'
     args: ['build', '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/app-images/${_IMAGE_NAME}:${SHORT_SHA}', '.']
 
-  # 3. Scan (Trivy)
+  # Scan (Trivy)
   - name: 'aquasec/trivy'
     id: 'scan'
     args: ['image', '--severity', 'CRITICAL', '--exit-code', '1', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/app-images/${_IMAGE_NAME}:${SHORT_SHA}']
 
-  # 4. Sign (BinAuthz)
+  # Sign (BinAuthz)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: 'sign'
     entrypoint: 'bash'

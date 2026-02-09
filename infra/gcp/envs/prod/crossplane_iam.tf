@@ -1,14 +1,14 @@
 # Issue #14: Crossplane Identity Binding
 # This grants the "Management Cluster" permission to manage GCP resources.
 
-# 1. Create a Google Service Account (GSA) for Crossplane
+# Create a Google Service Account (GSA) for Crossplane
 resource "google_service_account" "crossplane_sa" {
   account_id   = "crossplane-provider"
   display_name = "Crossplane Provider GCP Service Account"
   project      = var.management_project_id
 }
 
-# 2. Grant "Editor" (or specific Application Roles) to this GSA
+# Grant "Editor" (or specific Application Roles) to this GSA
 # In a real prod, rely on specific roles. For bootstrap, Editor is common for the Platform Admin.
 resource "google_project_iam_member" "crossplane_editor" {
   project = var.management_project_id
@@ -23,7 +23,7 @@ resource "google_project_iam_member" "crossplane_network_admin" {
   member  = "serviceAccount:${google_service_account.crossplane_sa.email}"
 }
 
-# 3. Bind the GSA to the Kubernetes Service Account (KSA)
+# Bind the GSA to the Kubernetes Service Account (KSA)
 # Note: The KSA is creating by the Crossplane Helm Chart.
 # Namespace: crossplane-system
 # Name: provider-gcp-* (matches the deployment)

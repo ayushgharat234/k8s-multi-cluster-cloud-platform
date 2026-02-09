@@ -1,0 +1,36 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xredisinstances.cache.gcp.dhi.io
+spec:
+  group: cache.gcp.dhi.io
+  names:
+    kind: XRedisInstance
+    plural: xredisinstances
+  claimNames:
+    kind: RedisInstance
+    plural: redisinstances
+  versions:
+  - name: v1alpha1
+    served: true
+    referenceable: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              parameters:
+                type: object
+                properties:
+                  memoryGB:
+                    type: integer
+                  tier:
+                    type: string
+                    enum: [BASIC, STANDARD_HA]
+                required:
+                - memoryGB
+                - tier
+            required:
+            - parameters

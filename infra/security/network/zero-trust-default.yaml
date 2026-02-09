@@ -12,7 +12,7 @@ spec:
           - monitoring
           - crossplane-system
   egress:
-    # 1. Allow DNS Resolution
+    # Allow DNS Resolution
     - toEndpoints:
         - matchLabels:
             io.kubernetes.pod.namespace: kube-system
@@ -25,7 +25,7 @@ spec:
             dns:
               - matchPattern: "*"
 
-    # 2. Allow API Access (L7 Filtering)
+    # Allow API Access (L7 Filtering)
     - toFQDNs:
         - matchName: "api.stripe.com"
         - matchName: "accounts.google.com"

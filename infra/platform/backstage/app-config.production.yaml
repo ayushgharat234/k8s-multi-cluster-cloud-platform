@@ -1,6 +1,6 @@
 app:
   # Should be the same as backend.baseUrl when using the `app-backend` plugin.
-  baseUrl: http://localhost:7007
+  baseUrl: https://backstage.dhi.io
 
 backend:
   # Note that the baseUrl should be the URL that the browser and other clients
@@ -8,7 +8,7 @@ backend:
   # reachable not just from within the backend host, but from all of your
   # callers. When its value is "http://localhost:7007", it's strictly private
   # and can't be reached by others.
-  baseUrl: http://localhost:7007
+  baseUrl: https://backstage.dhi.io
   # The listener can also be expressed as a single <host>:<port> string. In this case we bind to
   # all interfaces, the most permissive setting. The right value depends on your specific deployment.
   listen: ':7007'
@@ -50,14 +50,33 @@ catalog:
     - type: file
       target: ./examples/entities.yaml
 
-    # Local example template
-    - type: file
-      target: ./examples/template/template.yaml
-      rules:
-        - allow: [Template]
+catalog:
+  rules:
+    - allow: [Component, System, API, Resource, Location, Template]
+  providers:
+    # 1. GitHub Integration (For Software Templates)
+    github:
+      dhi-io:
+        organization: ayushgharat234
+        catalogPath: /catalog-info.yaml
+        schedule:
+          frequency: { minutes: 30 }
+          timeout: { minutes: 3 }
 
-    # Local example organizational data
-    - type: file
-      target: ./examples/org.yaml
-      rules:
-        - allow: [User, Group]
+    # 2. Cloud Identity Integration (Enterprise User Management)
+    # This automatically syncs users from Google Cloud Identity
+    google:
+      dhi-io:
+        googleClientId: ${GOOGLE_AUTH_CLIENT_ID}
+        googleClientSecret: ${GOOGLE_AUTH_CLIENT_SECRET}
+        schedule:
+            frequency: { minutes: 60 }
+            timeout: { minutes: 15 }
+            initialDelay: { seconds: 15 }
+
+    # 3. Static Catalog (Fallback/Bootstrap)
+    # Useful if Cloud Identity is empty initially
+    # - type: file
+    #   target: ../../../platform/catalog/users.yaml
+    # - type: file
+    #   target: ../../../platform/catalog/groups.yaml

@@ -16,7 +16,7 @@ spec:
           argocd.argoproj.io/secret-type: repository
       data:
         type: git
-        url: git@github.com:ayushgharat234/k8s-multi-cluster-multi-cloud-platform.git
+        url: git@github.com:ayushgharat234/k8s-multi-cluster-cloud-platform.git
         sshPrivateKey: "{{ .ssh_private_key }}"
   data:
   - secretKey: ssh_private_key

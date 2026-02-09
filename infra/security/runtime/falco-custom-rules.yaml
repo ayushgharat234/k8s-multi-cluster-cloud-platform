@@ -1,6 +1,6 @@
 customRules:
   rules-custom.yaml: |-
-    # 1. Terminal Shell in Container
+    # Terminal Shell in Container
     - rule: Terminal Shell in Container
       desc: A shell was used as the entrypoint for a container.
       condition: >
@@ -12,7 +12,7 @@ customRules:
       priority: WARNING
       tags: [mitre_execution]
 
-    # 2. Write to Binary Dir
+    # Write to Binary Dir
     - rule: Write below binary dir
       desc: an attempt to write to any file below a set of binary directories
       condition: >
@@ -22,7 +22,7 @@ customRules:
       priority: CRITICAL
       tags: [mitre_persistence]
 
-    # 3. Read Sensitive File Trusted
+    # Read Sensitive File Trusted
     - rule: Read Sensitive File Trusted
       desc: Detect reading of sensitive files like /etc/shadow
       condition: >
@@ -32,7 +32,7 @@ customRules:
       priority: WARNING
       tags: [mitre_credential_access]
 
-    # 4. Outbound Connection to Miner
+    # Outbound Connection to Miner
     - rule: Outbound Connection to Miner
       desc: Detect outbound connection to known crypto mining pools
       condition: >
@@ -42,7 +42,7 @@ customRules:
       priority: CRITICAL
       tags: [mitre_impact]
 
-    # 5. Unexpected K8s API Access
+    # Unexpected K8s API Access
     - rule: Contact K8S API Server From Container
       desc: Detect unexpected calls to the K8s API Server
       condition: >

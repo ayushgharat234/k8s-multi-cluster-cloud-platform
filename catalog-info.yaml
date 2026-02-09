@@ -1,0 +1,11 @@
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: platform-templates
+  description: A collection of all Software Templates for the Platform.
+spec:
+  targets:
+    - ./infra/platform/templates/go-service/template.yaml
+    - ./infra/platform/templates/python-service/template.yaml
+    - ./infra/platform/templates/node-service/template.yaml 
+    # - ./infra/platform/templates/react-frontend/template.yaml # Uncomment when ready
