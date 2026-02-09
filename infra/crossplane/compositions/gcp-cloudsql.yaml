@@ -1,0 +1,28 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: gcp-cloudsql
+  labels:
+    provider: gcp
+spec:
+  compositeTypeRef:
+    apiVersion: dhi.io/v1alpha1
+    kind: XPostgresInstance
+  resources:
+    - name: cloudsql-instance
+      base:
+        apiVersion: sql.gcp.upbound.io/v1beta1
+        kind: DatabaseInstance
+        spec:
+          forProvider:
+            databaseVersion: POSTGRES_14
+            region: us-central1
+            settings:
+              tier: db-f1-micro
+              ipConfiguration:
+                ipv4Enabled: false
+                privateNetworkRef:
+                  name: "platform-shared-vpc-prod"
+      patches:
+        - fromFieldPath: "spec.storageGB"
+          toFieldPath: "spec.forProvider.settings.diskSize"

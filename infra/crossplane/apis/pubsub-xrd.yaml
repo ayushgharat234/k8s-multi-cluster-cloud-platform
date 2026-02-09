@@ -1,0 +1,22 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xpubsubtopics.dhi.io
+spec:
+  group: dhi.io
+  names:
+    kind: XPubSubTopic
+    claimKind: PubSubTopic
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              messageRetentionDuration:
+                type: string
+                default: "604800s" # 7 days
+            required: []

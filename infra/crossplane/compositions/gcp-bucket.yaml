@@ -1,0 +1,22 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: gcp-bucket
+spec:
+  compositeTypeRef:
+    apiVersion: dhi.io/v1alpha1
+    kind: XStorageBucket
+  resources:
+    - name: gcp-bucket
+      base:
+        apiVersion: storage.gcp.upbound.io/v1beta1
+        kind: Bucket
+        spec:
+          forProvider:
+            location: US
+            versioning:
+              - enabled: true
+            uniformBucketLevelAccess: true
+      patches:
+        - fromFieldPath: "spec.location"
+          toFieldPath: "spec.forProvider.location"

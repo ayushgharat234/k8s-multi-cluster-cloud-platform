@@ -1,0 +1,22 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: gcp-bigquery
+spec:
+  compositeTypeRef:
+    apiVersion: dhi.io/v1alpha1
+    kind: XBigQueryDataset
+  resources:
+    - name: bq-dataset
+      base:
+        apiVersion: bigquery.gcp.upbound.io/v1beta1
+        kind: Dataset
+        spec:
+          forProvider:
+            location: "US"
+            access:
+              - role: "OWNER"
+                specialGroup: "projectOwners"
+      patches:
+        - fromFieldPath: "spec.location"
+          toFieldPath: "spec.forProvider.location"
