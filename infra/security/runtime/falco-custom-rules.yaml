@@ -1,0 +1,53 @@
+customRules:
+  rules-custom.yaml: |-
+    # 1. Terminal Shell in Container
+    - rule: Terminal Shell in Container
+      desc: A shell was used as the entrypoint for a container.
+      condition: >
+        spawned_process and container
+        and shell_procs and proc.tty != 0
+        and container_entrypoint
+      output: >
+        %evt.time.s,%user.name,%container.name,%proc.name,%proc.tty,%container.image.repository
+      priority: WARNING
+      tags: [mitre_execution]
+
+    # 2. Write to Binary Dir
+    - rule: Write below binary dir
+      desc: an attempt to write to any file below a set of binary directories
+      condition: >
+        open_write and dir_binaries
+      output: >
+        File below a known binary directory opened for writing (user=%user.name command=%proc.cmdline file=%fd.name)
+      priority: CRITICAL
+      tags: [mitre_persistence]
+
+    # 3. Read Sensitive File Trusted
+    - rule: Read Sensitive File Trusted
+      desc: Detect reading of sensitive files like /etc/shadow
+      condition: >
+        open_read and container and (fd.name startswith /etc/shadow or fd.name startswith /etc/ssl)
+      output: >
+        Sensitive file opened for reading (user=%user.name command=%proc.cmdline file=%fd.name)
+      priority: WARNING
+      tags: [mitre_credential_access]
+
+    # 4. Outbound Connection to Miner
+    - rule: Outbound Connection to Miner
+      desc: Detect outbound connection to known crypto mining pools
+      condition: >
+        outbound and fd.sip in (miner_pool_ips)
+      output: >
+        Outbound connection to miner pool (user=%user.name command=%proc.cmdline ip=%fd.sip)
+      priority: CRITICAL
+      tags: [mitre_impact]
+
+    # 5. Unexpected K8s API Access
+    - rule: Contact K8S API Server From Container
+      desc: Detect unexpected calls to the K8s API Server
+      condition: >
+        outbound and fd.sip.name="kubernetes" and not user_known_contact_k8s_api_server
+      output: >
+        Unexpected connection to K8s API Server (user=%user.name command=%proc.cmdline ip=%fd.sip)
+      priority: NOTICE
+      tags: [mitre_discovery]

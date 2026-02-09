@@ -1,0 +1,36 @@
+apiVersion: cilium.io/v2
+kind: CiliumClusterwideNetworkPolicy
+metadata:
+  name: zero-trust-default
+spec:
+  endpointSelector:
+    matchExpressions:
+      - key: io.kubernetes.pod.namespace
+        operator: NotIn
+        values:
+          - kube-system
+          - monitoring
+          - crossplane-system
+  egress:
+    # 1. Allow DNS Resolution
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+          rules:
+            dns:
+              - matchPattern: "*"
+
+    # 2. Allow API Access (L7 Filtering)
+    - toFQDNs:
+        - matchName: "api.stripe.com"
+        - matchName: "accounts.google.com"
+        - matchName: "oauth2.googleapis.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP

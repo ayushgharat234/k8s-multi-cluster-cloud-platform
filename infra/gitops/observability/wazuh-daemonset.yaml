@@ -1,0 +1,58 @@
+# --- 1. Observability (Google Managed Prometheus) ---
+# Enabled via Terraform (monitoring_config) in main.tf
+
+# --- 2. Wazuh Agent DaemonSet (Threat Detection) ---
+# File: infra/gitops/observability/wazuh-agent.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: wazuh-agent
+  namespace: wazuh
+  labels:
+    app: wazuh-agent
+spec:
+  selector:
+    matchLabels:
+      app: wazuh-agent
+  template:
+    metadata:
+      labels:
+        app: wazuh-agent
+    spec:
+      containers:
+        - name: wazuh-agent
+          image: wazuh/wazuh-agent:4.3.10
+          env:
+            - name: WAZUH_MANAGER
+              value: "wazuh.manager.svc.cluster.local"
+            - name: WAZUH_AGENT_GROUP
+              value: "default"
+          securityContext:
+            privileged: true # Required for FIM (File Integrity Monitoring)
+          volumeMounts:
+            - mountPath: /var/run/docker.sock
+              name: docker-sock
+      volumes:
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+
+# --- 3. Cilium Network Policy (Zero Trust) ---
+# File: infra/security/network/default-deny.yaml
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: prod-tenant-1
+spec:
+  endpointSelector: {}
+  ingress:
+    # Default Deny implies no rules = no traffic
+    # Allow from same namespace
+    - fromEndpoints:
+      - matchLabels:
+          io.kubernetes.pod.namespace: "prod-tenant-1"
+    # Allow from Ingress Controller
+    - fromEndpoints:
+      - matchLabels:
+          app: ingress-nginx

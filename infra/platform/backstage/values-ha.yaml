@@ -1,0 +1,79 @@
+# Backstage HA Configuration (values-ha.yaml)
+# Chart: backstage/backstage
+
+global:
+  domain: backstage.dhi.io
+
+# 1. High Availability (Replicas & Affinity)
+replicaCount: 3
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: DoNotSchedule
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: backstage
+
+# 2. Database Connection (Cloud SQL Proxy Sidecar)
+postgresql:
+  enabled: false # We use External Cloud SQL
+
+extraContainers:
+  - name: cloud-sql-proxy
+    image: gcr.io/cloudsql-docker/gce-proxy:1.33.0
+    command:
+      - "/cloud_sql_proxy"
+      - "-instances=${PROJECT_ID}:${REGION}:platform-db=tcp:5432"
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 65532
+
+# 3. Application Configuration (app-config.yaml injection)
+appConfig:
+  app:
+    baseUrl: https://backstage.dhi.io
+    title: DHI Developer Portal
+
+  auth:
+    environment: production
+    providers:
+      google:
+        development:
+          clientId: ${GOOGLE_CLIENT_ID}
+          clientSecret: ${GOOGLE_CLIENT_SECRET}
+
+  backend:
+    database:
+      client: pg
+      connection:
+        host: 127.0.0.1 # Connects to Sidecar
+        port: 5432
+        user: ${POSTGRES_USER} # Injected from Secret
+        password: ${POSTGRES_PASSWORD} # Injected from Secret
+
+  catalog:
+    providers:
+      github:
+        organization: dhi-io
+        catalogPath: /catalog-info.yaml
+
+# 4. Ingress (Global Load Balancer)
+ingress:
+  enabled: true
+  className: gce
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: backstage-ip
+    networking.gke.io/managed-certificates: backstage-cert
+    networking.gke.io/v1beta1.FrontendConfig: backstage-frontend-config # Cloud Armor
+  hosts:
+    - host: backstage.dhi.io
+      paths:
+        - path: /
+          pathType: Prefix
+
+# 5. Service Account (Workload Identity)
+serviceAccount:
+  create: true
+  name: backstage-backend
+  annotations:
+    iam.gke.io/gcp-service-account: backstage-sa@${PROJECT_ID}.iam.gserviceaccount.com

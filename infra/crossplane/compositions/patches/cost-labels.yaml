@@ -1,0 +1,10 @@
+apiVersion: pkg.crossplane.io/v1
+kind: Configuration
+metadata:
+  name: platform-ref-gcp
+spec:
+  crossplane:
+    version: ">=1.9.0"
+  dependsOn:
+    - provider: xpkg.upbound.io/upbound/provider-gcp
+      version: ">=0.28.0"

@@ -1,0 +1,9 @@
+apiVersion: networking.gke.io/v1beta1
+kind: FrontendConfig
+metadata:
+  name: backstage-frontend-config
+  namespace: backstage
+spec:
+  securityPolicy:
+    name: edge-waf-policy # The policy we created in Phase 2
+  sslPolicy: "profile-modern" # Enforce TLS 1.2+

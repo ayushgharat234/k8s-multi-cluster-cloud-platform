@@ -1,0 +1,13 @@
+apiVersion: cache.gcp.dhi.io/v1alpha1
+kind: RedisInstance
+metadata:
+  name: platform-cache
+  namespace: backstage
+spec:
+  parameters:
+    memoryGB: 1
+    tier: STANDARD_HA
+  compositionSelector:
+    matchLabels:
+      provider: gcp
+      type: production

@@ -1,0 +1,24 @@
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: argocd-repo-creds
+  namespace: argocd
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: gcp-secret-manager
+    kind: ClusterSecretStore
+  target:
+    name: repo-creds
+    template:
+      metadata:
+        labels:
+          argocd.argoproj.io/secret-type: repository
+      data:
+        type: git
+        url: git@github.com:ayushgharat234/k8s-multi-cluster-multi-cloud-platform.git
+        sshPrivateKey: "{{ .ssh_private_key }}"
+  data:
+  - secretKey: ssh_private_key
+    remoteRef:
+      key: argocd-github-ssh-key

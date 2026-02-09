@@ -1,0 +1,36 @@
+steps:
+  # 1. Test (Go)
+  - name: 'golang:1.19'
+    id: 'test'
+    entrypoint: 'bash'
+    args: ['-c', 'go test ./...']
+
+  # 2. Build Container Image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build'
+    args: ['build', '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/app-images/${_IMAGE_NAME}:${SHORT_SHA}', '.']
+
+  # 3. Scan (Trivy)
+  - name: 'aquasec/trivy'
+    id: 'scan'
+    args: ['image', '--severity', 'CRITICAL', '--exit-code', '1', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/app-images/${_IMAGE_NAME}:${SHORT_SHA}']
+
+  # 4. Sign (BinAuthz)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'sign'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud beta container binauthz attestations sign-and-create \
+          --artifact-url="${_REGION}-docker.pkg.dev/${PROJECT_ID}/app-images/${_IMAGE_NAME}:${SHORT_SHA}" \
+          --attestor="secure-build-attestor" \
+          --attestor-project="${PROJECT_ID}" \
+          --keyversion-project="${PROJECT_ID}" \
+          --keyversion-location="${_REGION}" \
+          --keyversion-keyring="binauthz-keyring" \
+          --keyversion-key="build-signer" \
+          --keyversion="1"
+
+images:
+  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/app-images/${_IMAGE_NAME}:${SHORT_SHA}'
