@@ -1,0 +1,21 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xbigquerydatasets.dhi.io
+spec:
+  group: dhi.io
+  names:
+    kind: XBigQueryDataset
+    claimKind: BigQueryDataset
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              location:
+                type: string
+                default: "US"

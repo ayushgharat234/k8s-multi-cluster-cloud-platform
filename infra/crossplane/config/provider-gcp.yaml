@@ -1,0 +1,8 @@
+apiVersion: gcp.upbound.io/v1beta1
+kind: ProviderConfig
+metadata:
+  name: default
+spec:
+  projectID: "HOST_PROJECT_ID" # Replace with your Host Network Project ID
+  credentials:
+    source: InjectedIdentity

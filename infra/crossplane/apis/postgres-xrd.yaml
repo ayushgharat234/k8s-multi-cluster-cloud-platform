@@ -1,0 +1,28 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xpostgresinstances.dhi.io
+spec:
+  group: dhi.io
+  names:
+    kind: XPostgresInstance
+    plural: xpostgresinstances
+  claimNames:
+    kind: PostgresInstance
+    plural: postgresinstances
+  versions:
+  - name: v1alpha1
+    served: true
+    referenceable: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              storageGB:
+                type: integer
+                description: "Size of the DB in GB"
+            required:
+            - storageGB

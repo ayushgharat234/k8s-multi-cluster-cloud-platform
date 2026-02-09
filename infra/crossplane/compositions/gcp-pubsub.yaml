@@ -1,0 +1,19 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: gcp-pubsub
+spec:
+  compositeTypeRef:
+    apiVersion: dhi.io/v1alpha1
+    kind: XPubSubTopic
+  resources:
+    - name: pubsub-topic
+      base:
+        apiVersion: pubsub.gcp.upbound.io/v1beta1
+        kind: Topic
+        spec:
+          forProvider:
+            messageRetentionDuration: "604800s"
+      patches:
+        - fromFieldPath: "spec.messageRetentionDuration"
+          toFieldPath: "spec.forProvider.messageRetentionDuration"
