@@ -36,7 +36,7 @@ steps:
         echo "On-demand scanning (local): $$IMAGE"
 
         SCAN=$$(gcloud artifacts docker images scan "$$IMAGE" \
-          --location=us-central1 --project=$PROJECT_ID \
+          --location=us --project=$PROJECT_ID \
           --format=json | python3 -c "import json,sys; print(json.load(sys.stdin)['response']['scan'])")
 
         echo "Scan: $$SCAN"
