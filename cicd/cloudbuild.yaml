@@ -64,27 +64,33 @@ steps:
       - |
         cat > /workspace/count_vulns.py << 'PYEOF'
         import json, sys
-        data = json.load(sys.stdin)
-        vulns = data.get('package_vulnerability_summary', {}).get('vulnerabilities', {})
-        critical = int(vulns.get('CRITICAL', 0) or 0)
-        high = int(vulns.get('HIGH', 0) or 0)
-        print(str(critical) + ' ' + str(high))
+        try:
+            data = json.load(sys.stdin)
+            vulns = data.get('package_vulnerability_summary', {}).get('vulnerabilities', {})
+            critical = len(vulns.get('CRITICAL', []))
+            high = len(vulns.get('HIGH', []))
+            print(str(critical) + ' ' + str(high))
+        except Exception:
+            print('-1 -1')
         PYEOF
-        echo "Waiting 60s for Container Analysis scan..."
-        sleep 60
+        echo "Waiting 120s for Container Analysis scan..."
+        sleep 120
         for service in frontend catalog payment; do
           IMAGE="us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-$${service}:$COMMIT_SHA"
           echo "Checking: $$IMAGE"
           COUNTS=$$(gcloud artifacts docker images describe "$$IMAGE" \
             --show-package-vulnerability --project=$PROJECT_ID \
-            --format=json 2>/dev/null | python3 /workspace/count_vulns.py 2>/dev/null || echo "0 0")
+            --format=json | python3 /workspace/count_vulns.py)
           CRITICAL=$$(echo "$$COUNTS" | awk '{print $1}')
           HIGH=$$(echo "$$COUNTS" | awk '{print $2}')
+          if [ "$${CRITICAL}" -lt 0 ]; then
+            echo "ERROR: Failed to parse vulnerability data for storefront-$${service}" && exit 1
+          fi
           echo "  CRITICAL=$${CRITICAL}  HIGH=$${HIGH}"
-          if [ "$${CRITICAL:-0}" -gt 0 ]; then
+          if [ "$${CRITICAL}" -gt 0 ]; then
             echo "BLOCKED: CRITICAL CVEs in storefront-$${service}" && exit 1
           fi
-          if [ "$${HIGH:-0}" -gt 5 ]; then
+          if [ "$${HIGH}" -gt 5 ]; then
             echo "BLOCKED: $${HIGH} HIGH CVEs exceed threshold in storefront-$${service}" && exit 1
           fi
           echo "  Passed."
@@ -110,8 +116,7 @@ steps:
             --keyversion-location=us-central1 \
             --keyversion-keyring=opsnexus-cluster-ring \
             --keyversion-key=cosign-key \
-            --keyversion=1 \
-            --yes
+            --keyversion=1
         done
     waitFor: [vuln-gate]
 
