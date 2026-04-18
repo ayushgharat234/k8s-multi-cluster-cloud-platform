@@ -1,8 +1,8 @@
 # Cloud Build — OpsNexus SLSA Level 3 CI Pipeline
-# Steps: build → push (capture digest) → vuln gate → binauthz attest → cloud deploy release
+# Steps: build -> push (capture digest) -> vuln gate -> binauthz attest -> cloud deploy release
 
 steps:
-  # ── Build ───────────────────────────────────────────────────────────────────
+  # Build
   - name: 'gcr.io/cloud-builders/docker'
     id: build-frontend
     args: [build, -t, 'us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-frontend:$COMMIT_SHA', apps/storefront/frontend]
@@ -15,8 +15,7 @@ steps:
     id: build-payment
     args: [build, -t, 'us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-payment:$COMMIT_SHA', apps/storefront/payment]
 
-  # ── Push + capture digest to /workspace/ ────────────────────────────────────
-  # /workspace/ is shared across all steps in the build.
+  # Push + write digest to /workspace/ (shared between all steps)
   - name: 'gcr.io/cloud-builders/docker'
     id: push-frontend
     entrypoint: bash
@@ -56,40 +55,43 @@ steps:
         cat /workspace/payment-digest.txt
     waitFor: [build-payment]
 
-  # ── Vulnerability Gate ───────────────────────────────────────────────────────
+  # Vulnerability Gate
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: vuln-gate
     entrypoint: bash
     args:
       - '-c'
       - |
+        cat > /workspace/count_vulns.py << 'PYEOF'
+        import json, sys
+        data = json.load(sys.stdin)
+        vulns = data.get('package_vulnerability_summary', {}).get('vulnerabilities', {})
+        critical = int(vulns.get('CRITICAL', 0) or 0)
+        high = int(vulns.get('HIGH', 0) or 0)
+        print(str(critical) + ' ' + str(high))
+        PYEOF
         echo "Waiting 60s for Container Analysis scan..."
         sleep 60
         for service in frontend catalog payment; do
           IMAGE="us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-$${service}:$COMMIT_SHA"
-          echo "Checking vulnerabilities for: $$IMAGE"
-          CRITICAL=$$(gcloud artifacts docker images describe "$$IMAGE" \
+          echo "Checking: $$IMAGE"
+          COUNTS=$$(gcloud artifacts docker images describe "$$IMAGE" \
             --show-package-vulnerability --project=$PROJECT_ID \
-            --format='value(package_vulnerability_summary.vulnerabilities.CRITICAL)' 2>/dev/null || echo "0")
-          HIGH=$$(gcloud artifacts docker images describe "$$IMAGE" \
-            --show-package-vulnerability --project=$PROJECT_ID \
-            --format='value(package_vulnerability_summary.vulnerabilities.HIGH)' 2>/dev/null || echo "0")
-          CRITICAL=$${CRITICAL:-0}
-          HIGH=$${HIGH:-0}
-          echo "  CRITICAL: $$CRITICAL  HIGH: $$HIGH"
-          if [ "$${CRITICAL}" -gt 0 ] 2>/dev/null; then
-            echo "BLOCKED: CRITICAL CVEs found in storefront-$${service}"
-            exit 1
+            --format=json 2>/dev/null | python3 /workspace/count_vulns.py 2>/dev/null || echo "0 0")
+          CRITICAL=$$(echo "$$COUNTS" | awk '{print $1}')
+          HIGH=$$(echo "$$COUNTS" | awk '{print $2}')
+          echo "  CRITICAL=$${CRITICAL}  HIGH=$${HIGH}"
+          if [ "$${CRITICAL:-0}" -gt 0 ]; then
+            echo "BLOCKED: CRITICAL CVEs in storefront-$${service}" && exit 1
           fi
-          if [ "$${HIGH}" -gt 5 ] 2>/dev/null; then
-            echo "BLOCKED: $$HIGH HIGH CVEs exceed threshold (5) in storefront-$${service}"
-            exit 1
+          if [ "$${HIGH:-0}" -gt 5 ]; then
+            echo "BLOCKED: $${HIGH} HIGH CVEs exceed threshold in storefront-$${service}" && exit 1
           fi
           echo "  Passed."
         done
     waitFor: [push-frontend, push-catalog, push-payment]
 
-  # ── Binary Authorization Attestation ────────────────────────────────────────
+  # Binary Authorization Attestation (native GCP, no external tools)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: attest-images
     entrypoint: bash
@@ -108,33 +110,39 @@ steps:
             --keyversion-location=us-central1 \
             --keyversion-keyring=opsnexus-cluster-ring \
             --keyversion-key=cosign-key \
-            --keyversion=1
+            --keyversion=1 \
+            --yes
         done
     waitFor: [vuln-gate]
 
-  # ── Cloud Deploy Release ─────────────────────────────────────────────────────
+  # Cloud Deploy — fire both pipelines independently
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: deploy
     entrypoint: bash
     args:
       - '-c'
       - |
-        gcloud deploy apply \
-          --file=apps/cloud-deploy/pipeline.yaml \
-          --region=us-central1 \
-          --project=$PROJECT_ID
+        gcloud deploy apply --file=apps/cloud-deploy/pipeline.yaml \
+          --region=us-central1 --project=$PROJECT_ID
+
+        gcloud deploy apply --file=apps/cloud-deploy/automations.yaml \
+          --region=us-central1 --project=$PROJECT_ID
 
         FRONTEND_DIGEST=$$(cat /workspace/frontend-digest.txt)
         CATALOG_DIGEST=$$(cat /workspace/catalog-digest.txt)
         PAYMENT_DIGEST=$$(cat /workspace/payment-digest.txt)
 
         gcloud deploy releases create "release-$SHORT_SHA" \
-          --project=$PROJECT_ID \
-          --region=us-central1 \
-          --delivery-pipeline=storefront-pipeline \
-          --skaffold-file=skaffold.yaml \
-          --source=. \
-          --images="storefront-frontend=us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-frontend@$$FRONTEND_DIGEST,storefront-catalog=us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-catalog@$$CATALOG_DIGEST,storefront-payment=us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-payment@$$PAYMENT_DIGEST"
+          --project=$PROJECT_ID --region=us-central1 \
+          --delivery-pipeline=gke-storefront-pipeline \
+          --skaffold-file=skaffold.yaml --source=. \
+          --images="storefront-frontend=us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-frontend@$$FRONTEND_DIGEST,storefront-payment=us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-payment@$$PAYMENT_DIGEST"
+
+        gcloud deploy releases create "release-$SHORT_SHA" \
+          --project=$PROJECT_ID --region=us-central1 \
+          --delivery-pipeline=eks-storefront-pipeline \
+          --skaffold-file=skaffold.yaml --source=. \
+          --images="storefront-catalog=us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-catalog@$$CATALOG_DIGEST"
     waitFor: [attest-images]
 
 serviceAccount: 'projects/dotted-saga-493511-a1/serviceAccounts/opsnexus-ci-sa@dotted-saga-493511-a1.iam.gserviceaccount.com'
