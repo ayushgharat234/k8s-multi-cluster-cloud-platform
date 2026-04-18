@@ -1,8 +1,11 @@
 # Cloud Build — storefront-catalog  SLSA Level 3
 # Trigger: apps/storefront/catalog/** path filter on prod branch
+#
+# Order: build → scan (local, before push) → push → attest → deploy
+# Vulnerable images NEVER reach Artifact Registry.
 
 steps:
-  # ── Build ─────────────────────────────────────────────────────────────────
+  # ── Build (local only) ────────────────────────────────────────────────────
   - name: 'gcr.io/cloud-builders/docker'
     id: build
     args:
@@ -11,7 +14,53 @@ steps:
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-catalog:$COMMIT_SHA'
       - apps/storefront/catalog
 
-  # ── Push + capture immutable digest ───────────────────────────────────────
+  # ── On-Demand Vulnerability Scan (local image, pre-push) ─────────────────
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: vuln-gate
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        cat > /workspace/count_vulns.py << 'PYEOF'
+        import json, sys
+        try:
+            data = json.load(sys.stdin)
+            critical = sum(1 for v in data if v.get('vulnerability', {}).get('effectiveSeverity', '') == 'CRITICAL')
+            high = sum(1 for v in data if v.get('vulnerability', {}).get('effectiveSeverity', '') == 'HIGH')
+            print(str(critical) + ' ' + str(high))
+        except Exception:
+            print('-1 -1')
+        PYEOF
+
+        IMAGE="us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-catalog:$COMMIT_SHA"
+        echo "On-demand scanning (local): $$IMAGE"
+
+        SCAN=$$(gcloud artifacts docker images scan "$$IMAGE" \
+          --location=us-central1 --project=$PROJECT_ID \
+          --format=json | python3 -c "import json,sys; print(json.load(sys.stdin)['response']['scan'])")
+
+        echo "Scan: $$SCAN"
+
+        COUNTS=$$(gcloud artifacts docker images list-vulnerabilities "$$SCAN" \
+          --format=json | python3 /workspace/count_vulns.py)
+
+        CRITICAL=$$(echo "$$COUNTS" | awk '{print $1}')
+        HIGH=$$(echo "$$COUNTS" | awk '{print $2}')
+
+        if [ "$$CRITICAL" -lt 0 ]; then
+          echo "ERROR: Failed to parse scan results" && exit 1
+        fi
+        echo "CRITICAL=$$CRITICAL  HIGH=$$HIGH"
+        if [ "$$CRITICAL" -gt 0 ]; then
+          echo "BLOCKED: CRITICAL CVEs in storefront-catalog — image will NOT be pushed" && exit 1
+        fi
+        if [ "$$HIGH" -gt 5 ]; then
+          echo "BLOCKED: $$HIGH HIGH CVEs exceed threshold (5) — image will NOT be pushed" && exit 1
+        fi
+        echo "Vulnerability gate passed."
+    waitFor: [build]
+
+  # ── Push only if scan passed — capture immutable digest ───────────────────
   - name: 'gcr.io/cloud-builders/docker'
     id: push
     entrypoint: bash
@@ -23,48 +72,7 @@ steps:
           us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-catalog:$COMMIT_SHA \
           | cut -d'@' -f2 > /workspace/digest.txt
         echo "Digest: $$(cat /workspace/digest.txt)"
-    waitFor: [build]
-
-  # ── Vulnerability Gate ─────────────────────────────────────────────────────
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: vuln-gate
-    entrypoint: bash
-    args:
-      - '-c'
-      - |
-        cat > /workspace/count_vulns.py << 'PYEOF'
-        import json, sys
-        try:
-            data = json.load(sys.stdin)
-            vulns = data.get('package_vulnerability_summary', {}).get('vulnerabilities', {})
-            critical = len(vulns.get('CRITICAL', []))
-            high = len(vulns.get('HIGH', []))
-            print(str(critical) + ' ' + str(high))
-        except Exception:
-            print('-1 -1')
-        PYEOF
-        echo "Waiting 120s for Container Analysis scan..."
-        sleep 120
-        DIGEST=$$(cat /workspace/digest.txt)
-        IMAGE="us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-catalog@$$DIGEST"
-        echo "Scanning: $$IMAGE"
-        COUNTS=$$(gcloud artifacts docker images describe "$$IMAGE" \
-          --show-package-vulnerability --project=$PROJECT_ID \
-          --format=json | python3 /workspace/count_vulns.py)
-        CRITICAL=$$(echo "$$COUNTS" | awk '{print $1}')
-        HIGH=$$(echo "$$COUNTS" | awk '{print $2}')
-        if [ "$$CRITICAL" -lt 0 ]; then
-          echo "ERROR: Failed to parse vulnerability data" && exit 1
-        fi
-        echo "CRITICAL=$$CRITICAL  HIGH=$$HIGH"
-        if [ "$$CRITICAL" -gt 0 ]; then
-          echo "BLOCKED: CRITICAL CVEs found in storefront-catalog" && exit 1
-        fi
-        if [ "$$HIGH" -gt 5 ]; then
-          echo "BLOCKED: $$HIGH HIGH CVEs exceed threshold (5) in storefront-catalog" && exit 1
-        fi
-        echo "Vulnerability gate passed."
-    waitFor: [push]
+    waitFor: [vuln-gate]
 
   # ── Binary Authorization Attestation ─────────────────────────────────────
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -85,7 +93,7 @@ steps:
           --keyversion-keyring=opsnexus-cluster-ring \
           --keyversion-key=cosign-key \
           --keyversion=1
-    waitFor: [vuln-gate]
+    waitFor: [push]
 
   # ── Cloud Deploy Release ───────────────────────────────────────────────────
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
