@@ -32,7 +32,7 @@ profiles:
     manifests:
       kustomize:
         paths:
-          - apps/storefront/gke-frontend
+          - apps/storefront/frontend
     deploy:
       kubectl: {}
 
@@ -41,7 +41,7 @@ profiles:
     manifests:
       kustomize:
         paths:
-          - apps/storefront/gke-payment
+          - apps/storefront/payment
     deploy:
       kubectl: {}
 
@@ -50,6 +50,6 @@ profiles:
     manifests:
       kustomize:
         paths:
-          - apps/storefront/eks
+          - apps/storefront/catalog
     deploy:
       kubectl: {}
