@@ -102,13 +102,6 @@ steps:
     args:
       - '-c'
       - |
-        gcloud deploy apply --file=apps/cloud-deploy/targets.yaml \
-          --region=us-central1 --project=$PROJECT_ID
-        gcloud deploy apply --file=apps/cloud-deploy/catalog-pipeline.yaml \
-          --region=us-central1 --project=$PROJECT_ID
-        gcloud deploy apply --file=apps/cloud-deploy/catalog-automation.yaml \
-          --region=us-central1 --project=$PROJECT_ID
-
         DIGEST=$$(cat /workspace/digest.txt)
         gcloud deploy releases create "release-$SHORT_SHA" \
           --project=$PROJECT_ID --region=us-central1 \
