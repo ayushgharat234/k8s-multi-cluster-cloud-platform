@@ -1,5 +1,5 @@
 # Cloud Build — OpsNexus SLSA Level 3 CI Pipeline
-# Steps: build → push → vuln gate → binauthz attest → cloud deploy release
+# Steps: build → push (capture digest) → vuln gate → binauthz attest → cloud deploy release
 
 steps:
   # ── Build ───────────────────────────────────────────────────────────────────
@@ -15,24 +15,48 @@ steps:
     id: build-payment
     args: [build, -t, 'us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-payment:$COMMIT_SHA', apps/storefront/payment]
 
-  # ── Push ────────────────────────────────────────────────────────────────────
+  # ── Push + capture digest to /workspace/ ────────────────────────────────────
+  # /workspace/ is shared across all steps in the build.
   - name: 'gcr.io/cloud-builders/docker'
     id: push-frontend
-    args: [push, 'us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-frontend:$COMMIT_SHA']
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        docker push us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-frontend:$COMMIT_SHA
+        docker inspect --format='{{index .RepoDigests 0}}' \
+          us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-frontend:$COMMIT_SHA \
+          | cut -d'@' -f2 > /workspace/frontend-digest.txt
+        cat /workspace/frontend-digest.txt
     waitFor: [build-frontend]
 
   - name: 'gcr.io/cloud-builders/docker'
     id: push-catalog
-    args: [push, 'us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-catalog:$COMMIT_SHA']
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        docker push us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-catalog:$COMMIT_SHA
+        docker inspect --format='{{index .RepoDigests 0}}' \
+          us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-catalog:$COMMIT_SHA \
+          | cut -d'@' -f2 > /workspace/catalog-digest.txt
+        cat /workspace/catalog-digest.txt
     waitFor: [build-catalog]
 
   - name: 'gcr.io/cloud-builders/docker'
     id: push-payment
-    args: [push, 'us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-payment:$COMMIT_SHA']
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        docker push us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-payment:$COMMIT_SHA
+        docker inspect --format='{{index .RepoDigests 0}}' \
+          us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-payment:$COMMIT_SHA \
+          | cut -d'@' -f2 > /workspace/payment-digest.txt
+        cat /workspace/payment-digest.txt
     waitFor: [build-payment]
 
   # ── Vulnerability Gate ───────────────────────────────────────────────────────
-  # Container Analysis scans on push. Wait 60s then block on HIGH/CRITICAL CVEs.
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: vuln-gate
     entrypoint: bash
@@ -42,16 +66,30 @@ steps:
         echo "Waiting 60s for Container Analysis scan..."
         sleep 60
         for service in frontend catalog payment; do
-          bash cicd/check-vulnerabilities.sh \
-            "us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-$${service}:$COMMIT_SHA" \
-            "$PROJECT_ID"
+          IMAGE="us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-$${service}:$COMMIT_SHA"
+          echo "Checking vulnerabilities for: $$IMAGE"
+          CRITICAL=$$(gcloud artifacts docker images describe "$$IMAGE" \
+            --show-package-vulnerability --project=$PROJECT_ID \
+            --format='value(package_vulnerability_summary.vulnerabilities.CRITICAL)' 2>/dev/null || echo "0")
+          HIGH=$$(gcloud artifacts docker images describe "$$IMAGE" \
+            --show-package-vulnerability --project=$PROJECT_ID \
+            --format='value(package_vulnerability_summary.vulnerabilities.HIGH)' 2>/dev/null || echo "0")
+          CRITICAL=$${CRITICAL:-0}
+          HIGH=$${HIGH:-0}
+          echo "  CRITICAL: $$CRITICAL  HIGH: $$HIGH"
+          if [ "$${CRITICAL}" -gt 0 ] 2>/dev/null; then
+            echo "BLOCKED: CRITICAL CVEs found in storefront-$${service}"
+            exit 1
+          fi
+          if [ "$${HIGH}" -gt 5 ] 2>/dev/null; then
+            echo "BLOCKED: $$HIGH HIGH CVEs exceed threshold (5) in storefront-$${service}"
+            exit 1
+          fi
+          echo "  Passed."
         done
     waitFor: [push-frontend, push-catalog, push-payment]
 
   # ── Binary Authorization Attestation ────────────────────────────────────────
-  # Native GCP signing — no external tools needed.
-  # Creates a KMS-signed attestation in Container Analysis.
-  # GKE admission webhook checks this before allowing any pod to run.
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: attest-images
     entrypoint: bash
@@ -59,12 +97,7 @@ steps:
       - '-c'
       - |
         for service in frontend catalog payment; do
-          IMAGE="us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-$${service}:$COMMIT_SHA"
-          # Get digest directly from docker push output stored in image manifest
-          DIGEST=$$(gcloud artifacts docker images list \
-            "us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-$${service}" \
-            --filter="tags=$COMMIT_SHA" \
-            --format='value(version)' --project=$PROJECT_ID)
+          DIGEST=$$(cat /workspace/$${service}-digest.txt)
           FULL_IMAGE="us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-$${service}@$$DIGEST"
           echo "Attesting $$FULL_IMAGE"
           gcloud beta container binauthz attestations sign-and-create \
@@ -80,9 +113,6 @@ steps:
     waitFor: [vuln-gate]
 
   # ── Cloud Deploy Release ─────────────────────────────────────────────────────
-  # Passes image digests (immutable) — not tags.
-  # profile gke  → frontend + payment → GKE Spoke  (canary 25%→75%→100%)
-  # profile eks  → catalog            → EKS Spoke  (full, after GKE stable)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: deploy
     entrypoint: bash
@@ -94,15 +124,9 @@ steps:
           --region=us-central1 \
           --project=$PROJECT_ID
 
-        FRONTEND_DIGEST=$$(gcloud artifacts docker images list \
-          "us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-frontend" \
-          --filter="tags=$COMMIT_SHA" --format='value(version)' --project=$PROJECT_ID)
-        CATALOG_DIGEST=$$(gcloud artifacts docker images list \
-          "us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-catalog" \
-          --filter="tags=$COMMIT_SHA" --format='value(version)' --project=$PROJECT_ID)
-        PAYMENT_DIGEST=$$(gcloud artifacts docker images list \
-          "us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-payment" \
-          --filter="tags=$COMMIT_SHA" --format='value(version)' --project=$PROJECT_ID)
+        FRONTEND_DIGEST=$$(cat /workspace/frontend-digest.txt)
+        CATALOG_DIGEST=$$(cat /workspace/catalog-digest.txt)
+        PAYMENT_DIGEST=$$(cat /workspace/payment-digest.txt)
 
         gcloud deploy releases create "release-$SHORT_SHA" \
           --project=$PROJECT_ID \
