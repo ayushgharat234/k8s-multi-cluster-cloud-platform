@@ -1,0 +1,20 @@
+# Shared Cloud Deploy targets — applied idempotently by each service's CI pipeline.
+
+apiVersion: deploy.cloud.google.com/v1
+kind: Target
+metadata:
+  name: gke-spoke
+description: "GKE Spoke — data-493511 — frontend + payment"
+gke:
+  cluster: projects/data-493511/locations/us-central1/clusters/opsnexus-spoke-cluster
+requireApproval: false
+
+---
+apiVersion: deploy.cloud.google.com/v1
+kind: Target
+metadata:
+  name: eks-spoke
+description: "EKS Spoke — AWS — catalog"
+anthosCluster:
+  membership: projects/dotted-saga-493511-a1/locations/global/memberships/opsnexus-eks-spoke
+requireApproval: false

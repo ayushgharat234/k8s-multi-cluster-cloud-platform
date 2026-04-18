@@ -1,0 +1,18 @@
+apiVersion: deploy.cloud.google.com/v1
+kind: DeliveryPipeline
+metadata:
+  name: frontend-pipeline
+description: "storefront-frontend → GKE Spoke — canary 25→75→100%"
+serialPipeline:
+  stages:
+  - targetId: gke-spoke
+    profiles: [gke-frontend]
+    strategy:
+      canary:
+        runtimeConfig:
+          kubernetes:
+            serviceNetworking:
+              deployment: storefront-frontend
+              service: storefront-frontend
+        canaryDeployment:
+          percentages: [25, 75]

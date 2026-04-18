@@ -1,0 +1,15 @@
+apiVersion: deploy.cloud.google.com/v1
+kind: Automation
+metadata:
+  name: catalog-pipeline/advance-canary
+deliveryPipeline: catalog-pipeline
+suspended: false
+serviceAccount: opsnexus-ci-sa@dotted-saga-493511-a1.iam.gserviceaccount.com
+selector:
+- target:
+    id: eks-spoke
+rules:
+- advanceRolloutRule:
+    id: advance-canary-phases
+    sourcePhases: [canary-25, canary-75]
+    wait: 10m

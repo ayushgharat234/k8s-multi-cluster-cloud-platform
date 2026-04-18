@@ -1,15 +1,15 @@
 # =============================================================================
-# Skaffold — Cloud Deploy Manifest Renderer
+# Skaffold — Cloud Deploy Manifest Renderer (per-service profiles)
 # =============================================================================
 # Service placement:
-#   GKE Spoke (data-493511) → frontend + payment
-#     - frontend: serves users via Multi-cluster Ingress
-#     - payment:  uses GCP Workload Identity → Secret Manager
-#   EKS Spoke (AWS)         → catalog
-#     - catalog:  uses IRSA → DynamoDB
+#   GKE Spoke (data-493511):
+#     - frontend  → profile: gke-frontend  → kustomize: apps/storefront/gke-frontend
+#     - payment   → profile: gke-payment   → kustomize: apps/storefront/gke-payment
+#   EKS Spoke (AWS):
+#     - catalog   → profile: eks           → kustomize: apps/storefront/eks
 #
-# Profiles let Cloud Deploy send different manifests to different clusters
-# from a single release. The --images flag substitutes digests in both profiles.
+# Cloud Deploy passes --profile=<name> derived from the pipeline stage's
+# profiles field. The --images flag substitutes image digests per release.
 # =============================================================================
 
 apiVersion: skaffold/v4beta7
@@ -27,16 +27,25 @@ build:
       context: apps/storefront/payment
 
 profiles:
-  # ── GKE profile: frontend + payment → GKE Spoke ──────────────────────────
-  - name: gke
+  # ── GKE: frontend only ────────────────────────────────────────────────────
+  - name: gke-frontend
     manifests:
       kustomize:
         paths:
-          - apps/storefront/gke
+          - apps/storefront/gke-frontend
     deploy:
       kubectl: {}
 
-  # ── EKS profile: catalog → EKS Spoke ─────────────────────────────────────
+  # ── GKE: payment only ─────────────────────────────────────────────────────
+  - name: gke-payment
+    manifests:
+      kustomize:
+        paths:
+          - apps/storefront/gke-payment
+    deploy:
+      kubectl: {}
+
+  # ── EKS: catalog only ─────────────────────────────────────────────────────
   - name: eks
     manifests:
       kustomize:
