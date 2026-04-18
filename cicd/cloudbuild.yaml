@@ -60,11 +60,14 @@ steps:
       - |
         for service in frontend catalog payment; do
           IMAGE="us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-$${service}:$COMMIT_SHA"
-          DIGEST=$$(gcloud artifacts docker images describe "$$IMAGE" \
-            --format='value(image_summary.digest)' --project=$PROJECT_ID)
+          # Get digest directly from docker push output stored in image manifest
+          DIGEST=$$(gcloud artifacts docker images list \
+            "us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-$${service}" \
+            --filter="tags=$COMMIT_SHA" \
+            --format='value(version)' --project=$PROJECT_ID)
           FULL_IMAGE="us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-$${service}@$$DIGEST"
           echo "Attesting $$FULL_IMAGE"
-          gcloud container binauthz attestations sign-and-create \
+          gcloud beta container binauthz attestations sign-and-create \
             --artifact-url="$$FULL_IMAGE" \
             --attestor=opsnexus-hub-attestor \
             --attestor-project=$PROJECT_ID \
@@ -91,15 +94,15 @@ steps:
           --region=us-central1 \
           --project=$PROJECT_ID
 
-        FRONTEND_DIGEST=$$(gcloud artifacts docker images describe \
-          "us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-frontend:$COMMIT_SHA" \
-          --format='value(image_summary.digest)' --project=$PROJECT_ID)
-        CATALOG_DIGEST=$$(gcloud artifacts docker images describe \
-          "us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-catalog:$COMMIT_SHA" \
-          --format='value(image_summary.digest)' --project=$PROJECT_ID)
-        PAYMENT_DIGEST=$$(gcloud artifacts docker images describe \
-          "us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-payment:$COMMIT_SHA" \
-          --format='value(image_summary.digest)' --project=$PROJECT_ID)
+        FRONTEND_DIGEST=$$(gcloud artifacts docker images list \
+          "us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-frontend" \
+          --filter="tags=$COMMIT_SHA" --format='value(version)' --project=$PROJECT_ID)
+        CATALOG_DIGEST=$$(gcloud artifacts docker images list \
+          "us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-catalog" \
+          --filter="tags=$COMMIT_SHA" --format='value(version)' --project=$PROJECT_ID)
+        PAYMENT_DIGEST=$$(gcloud artifacts docker images list \
+          "us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-payment" \
+          --filter="tags=$COMMIT_SHA" --format='value(version)' --project=$PROJECT_ID)
 
         gcloud deploy releases create "release-$SHORT_SHA" \
           --project=$PROJECT_ID \
