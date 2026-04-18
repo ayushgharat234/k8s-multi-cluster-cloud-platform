@@ -1,0 +1,34 @@
+apiVersion: deploy.cloud.google.com/v1
+kind: Automation
+metadata:
+  name: storefront-pipeline/advance-canary
+deliveryPipeline: storefront-pipeline
+suspended: false
+serviceAccount: opsnexus-ci-sa@dotted-saga-493511-a1.iam.gserviceaccount.com
+selector:
+- target:
+    id: gke-spoke
+rules:
+- advanceRolloutRule:
+    id: advance-canary-phases
+    sourcePhases:
+    - canary-25
+    - canary-75
+    wait: 10m
+
+---
+apiVersion: deploy.cloud.google.com/v1
+kind: Automation
+metadata:
+  name: storefront-pipeline/promote-to-eks
+deliveryPipeline: storefront-pipeline
+suspended: false
+serviceAccount: opsnexus-ci-sa@dotted-saga-493511-a1.iam.gserviceaccount.com
+selector:
+- target:
+    id: gke-spoke
+rules:
+- promoteReleaseRule:
+    id: promote-after-stable
+    toTargetId: "@next"
+    wait: 5m

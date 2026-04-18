@@ -1,0 +1,38 @@
+apiVersion: deploy.cloud.google.com/v1
+kind: DeliveryPipeline
+metadata:
+  name: storefront-pipeline
+description: "Storefront — GKE canary (frontend+payment) then EKS full (catalog)"
+serialPipeline:
+  stages:
+  - targetId: gke-spoke
+    profiles: [gke]
+    strategy:
+      canary:
+        runtimeConfig:
+          kubernetes:
+            serviceNetworking:
+              deployment: storefront-frontend
+              service: storefront-frontend
+        canaryDeployment:
+          percentages: [25, 75]
+  - targetId: eks-spoke
+    profiles: [eks]
+
+---
+apiVersion: deploy.cloud.google.com/v1
+kind: Target
+metadata:
+  name: gke-spoke
+description: "GKE Spoke — data-493511 — frontend + payment"
+gke:
+  cluster: projects/data-493511/locations/us-central1/clusters/opsnexus-spoke-cluster
+
+---
+apiVersion: deploy.cloud.google.com/v1
+kind: Target
+metadata:
+  name: eks-spoke
+description: "EKS Spoke — AWS — catalog (attached via GCP Fleet)"
+anthosCluster:
+  membership: projects/dotted-saga-493511-a1/locations/global/memberships/opsnexus-eks-spoke

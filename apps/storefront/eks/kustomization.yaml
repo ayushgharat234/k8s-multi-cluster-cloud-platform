@@ -1,0 +1,12 @@
+# EKS Spoke (AWS) — catalog
+# Catalog uses IRSA (IAM Roles for Service Accounts) to access DynamoDB.
+# The eks.amazonaws.com/role-arn annotation on the ServiceAccount enables this.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../catalog/kubernetes.yaml
+
+images:
+  - name: storefront-catalog
+    newName: us-central1-docker.pkg.dev/dotted-saga-493511-a1/opsnexus/storefront-catalog

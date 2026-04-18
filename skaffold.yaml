@@ -1,0 +1,46 @@
+# =============================================================================
+# Skaffold — Cloud Deploy Manifest Renderer
+# =============================================================================
+# Service placement:
+#   GKE Spoke (data-493511) → frontend + payment
+#     - frontend: serves users via Multi-cluster Ingress
+#     - payment:  uses GCP Workload Identity → Secret Manager
+#   EKS Spoke (AWS)         → catalog
+#     - catalog:  uses IRSA → DynamoDB
+#
+# Profiles let Cloud Deploy send different manifests to different clusters
+# from a single release. The --images flag substitutes digests in both profiles.
+# =============================================================================
+
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+  name: storefront
+
+build:
+  artifacts:
+    - image: storefront-frontend
+      context: apps/storefront/frontend
+    - image: storefront-catalog
+      context: apps/storefront/catalog
+    - image: storefront-payment
+      context: apps/storefront/payment
+
+profiles:
+  # ── GKE profile: frontend + payment → GKE Spoke ──────────────────────────
+  - name: gke
+    manifests:
+      kustomize:
+        paths:
+          - apps/storefront/gke
+    deploy:
+      kubectl: {}
+
+  # ── EKS profile: catalog → EKS Spoke ─────────────────────────────────────
+  - name: eks
+    manifests:
+      kustomize:
+        paths:
+          - apps/storefront/eks
+    deploy:
+      kubectl: {}

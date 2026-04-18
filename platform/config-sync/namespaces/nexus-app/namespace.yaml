@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nexus-app
+  labels:
+    env: production
+    mesh: enabled # This automatically injects the ASM sidecar if using auto-injection

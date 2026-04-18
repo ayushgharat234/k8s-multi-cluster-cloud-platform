@@ -1,0 +1,159 @@
+# =============================================================================
+# Cloud Build — OpsNexus SLSA Level 3 CI Pipeline
+# =============================================================================
+# Trigger: Connected to GitHub repo via Cloud Build Trigger (GCP Console).
+# Fires on every push to `main`.
+#
+# Steps:
+#   1. Build all 3 images (frontend, catalog, payment) in parallel
+#   2. Push to Artifact Registry (us-central1-docker.pkg.dev/dotted-saga-493511-a1/opsnexus)
+#   3. Vulnerability gate — block if HIGH/CRITICAL CVEs detected
+#   4. Sign each image DIGEST with Cosign + Cloud KMS HSM key
+#      (digest = sha256:... — immutable, unlike tags)
+#   5. Create Cloud Deploy release → triggers canary to GKE Spoke, then EKS Spoke
+#
+# SLSA Level 3:
+#   requestedVerifyOption: VERIFIED causes Cloud Build to generate a signed
+#   provenance attestation proving this build ran in Cloud Build's isolated
+#   environment (not a local machine). Verifiable via `gcloud artifacts ...`.
+#
+# Prerequisites (one-time setup):
+#   - Cloud Build connected to GitHub repo in GCP Console
+#   - Cloud Build SA granted: artifactregistry.writer, cloudkms.signerVerifier,
+#     clouddeploy.releaser, container.developer
+# =============================================================================
+
+steps:
+  # ── Build all 3 images in parallel ─────────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    id: build-frontend
+    args:
+      - build
+      - -t
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-frontend:$COMMIT_SHA'
+      - apps/storefront/frontend
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: build-catalog
+    args:
+      - build
+      - -t
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-catalog:$COMMIT_SHA'
+      - apps/storefront/catalog
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: build-payment
+    args:
+      - build
+      - -t
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-payment:$COMMIT_SHA'
+      - apps/storefront/payment
+
+  # ── Push all 3 images ───────────────────────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    id: push-frontend
+    args: [push, 'us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-frontend:$COMMIT_SHA']
+    waitFor: [build-frontend]
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: push-catalog
+    args: [push, 'us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-catalog:$COMMIT_SHA']
+    waitFor: [build-catalog]
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: push-payment
+    args: [push, 'us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-payment:$COMMIT_SHA']
+    waitFor: [build-payment]
+
+  # ── Vulnerability Gate ───────────────────────────────────────────────────────
+  # Container Analysis auto-scans images on push. We wait 60s then block if
+  # any HIGH or CRITICAL CVE is found. Image is never signed if this fails.
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: vuln-gate
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        echo "Waiting 60s for Container Analysis vulnerability scan..."
+        sleep 60
+        for service in frontend catalog payment; do
+          bash cicd/check-vulnerabilities.sh \
+            "us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-${service}:$COMMIT_SHA" \
+            "$PROJECT_ID"
+        done
+    waitFor: [push-frontend, push-catalog, push-payment]
+
+  # ── Cosign Sign all image DIGESTS ────────────────────────────────────────────
+  # We sign the sha256 digest, not the tag. Tags are mutable; digests are not.
+  # Binary Authorization on GKE Spoke and EKS Spoke will reject any pod whose
+  # image digest doesn't have a valid Cosign signature from this KMS key.
+  - name: 'gcr.io/projectsigstore/cosign'
+    id: sign-images
+    entrypoint: sh
+    args:
+      - '-c'
+      - |
+        for service in frontend catalog payment; do
+          IMAGE="us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-${service}:$COMMIT_SHA"
+          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "$$IMAGE")
+          echo "Signing $$DIGEST"
+          cosign sign \
+            --key "gcpkms://projects/$PROJECT_ID/locations/us-central1/keyRings/opsnexus-cluster-ring/cryptoKeys/cosign-key" \
+            --yes \
+            "$$DIGEST"
+        done
+    waitFor: [vuln-gate]
+
+  # ── Create Cloud Deploy Release ──────────────────────────────────────────────
+  # Cloud Deploy receives exact image digests (not mutable tags).
+  # It renders skaffold manifests per profile:
+  #   - profile gke → frontend + payment → GKE Spoke (canary: 25% → 75% → 100%)
+  #   - profile eks → catalog            → EKS Spoke (full, after GKE completes)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: deploy
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        # Apply pipeline & targets (idempotent — safe on every build)
+        gcloud deploy apply \
+          --file=apps/cloud-deploy/pipeline.yaml \
+          --region=us-central1 \
+          --project=$PROJECT_ID
+
+        # Resolve digests for immutable image refs
+        FRONTEND_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' \
+          "us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-frontend:$COMMIT_SHA")
+        CATALOG_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' \
+          "us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-catalog:$COMMIT_SHA")
+        PAYMENT_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' \
+          "us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-payment:$COMMIT_SHA")
+
+        gcloud deploy releases create "release-${SHORT_SHA}" \
+          --project=$PROJECT_ID \
+          --region=us-central1 \
+          --delivery-pipeline=storefront-pipeline \
+          --skaffold-file=skaffold.yaml \
+          --source=. \
+          --images="\
+            storefront-frontend=$$FRONTEND_DIGEST,\
+            storefront-catalog=$$CATALOG_DIGEST,\
+            storefront-payment=$$PAYMENT_DIGEST"
+    waitFor: [sign-images]
+
+# Run builds as the CI SA (has AR writer, KMS signerVerifier, Cloud Deploy releaser)
+# instead of the default Cloud Build SA which needs separate permission grants.
+serviceAccount: 'projects/dotted-saga-493511-a1/serviceAccounts/opsnexus-ci-sa@dotted-saga-493511-a1.iam.gserviceaccount.com'
+
+substitutions:
+  _SHORT_SHA: '${COMMIT_SHA:0:8}'
+
+options:
+  # SLSA Level 3: generates signed provenance for this build
+  requestedVerifyOption: VERIFIED
+  logging: CLOUD_LOGGING_ONLY
+
+images:
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-frontend:$COMMIT_SHA'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-catalog:$COMMIT_SHA'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-payment:$COMMIT_SHA'

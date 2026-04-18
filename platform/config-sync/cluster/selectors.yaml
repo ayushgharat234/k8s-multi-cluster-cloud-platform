@@ -1,0 +1,19 @@
+# Selector for GCP-specific resources
+apiVersion: configmanagement.gke.io/v1
+kind: ClusterSelector
+metadata:
+  name: selector-gcp
+spec:
+  selector:
+    matchLabels:
+      provider: gcp
+---
+# Selector for AWS-specific resources
+apiVersion: configmanagement.gke.io/v1
+kind: ClusterSelector
+metadata:
+  name: selector-aws
+spec:
+  selector:
+    matchLabels:
+      provider: aws

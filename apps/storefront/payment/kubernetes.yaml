@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: payment-sa
+  namespace: nexus-app
+  annotations:
+    # GCP Workload Identity: Linking K8s SA to GCP Service Account
+    iam.gke.io/gcp-service-account: opsnexus-payment-sa@dotted-saga-493511-a1.iam.gserviceaccount.com
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storefront-payment
+  namespace: nexus-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: storefront-payment
+  template:
+    metadata:
+      labels:
+        app: storefront-payment
+    spec:
+      serviceAccountName: payment-sa
+      containers:
+      - name: payment
+        image: storefront-payment
+        env:
+        - name: GCP_SECRET_NAME
+          value: "payment-api-key"
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: storefront-payment
+  namespace: nexus-app
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+  selector:
+    app: storefront-payment

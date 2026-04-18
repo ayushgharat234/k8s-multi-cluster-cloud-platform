@@ -1,0 +1,14 @@
+# GKE Spoke (data-493511) — frontend + payment
+# These services use GCP Workload Identity and run on the GKE workload cluster.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../frontend/kubernetes.yaml
+  - ../payment/kubernetes.yaml
+
+images:
+  - name: storefront-frontend
+    newName: us-central1-docker.pkg.dev/dotted-saga-493511-a1/opsnexus/storefront-frontend
+  - name: storefront-payment
+    newName: us-central1-docker.pkg.dev/dotted-saga-493511-a1/opsnexus/storefront-payment

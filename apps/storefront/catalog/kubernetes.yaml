@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: catalog-sa
+  namespace: nexus-app
+  annotations:
+    # AWS IRSA: Linking K8s SA to AWS IAM Role
+    eks.amazonaws.com/role-arn: arn:aws:iam::262270938572:role/opsnexus-catalog-role
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storefront-catalog
+  namespace: nexus-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: storefront-catalog
+  template:
+    metadata:
+      labels:
+        app: storefront-catalog
+    spec:
+      serviceAccountName: catalog-sa
+      containers:
+      - name: catalog
+        image: storefront-catalog
+        env:
+        - name: DYNAMODB_TABLE
+          value: "opsnexus-catalog"
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: storefront-catalog
+  namespace: nexus-app
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+  selector:
+    app: storefront-catalog

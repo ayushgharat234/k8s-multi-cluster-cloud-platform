@@ -1,0 +1,6 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Use cluster-specific bases:
+#   apps/storefront/gke/  → frontend + payment (GKE Spoke, data-493511)
+#   apps/storefront/eks/  → catalog (EKS Spoke)
+resources: []
