@@ -103,7 +103,8 @@ steps:
       - '-c'
       - |
         DIGEST=$$(cat /workspace/digest.txt)
-        gcloud deploy releases create "release-$SHORT_SHA" \
+        RELEASE_NAME="rel-$SHORT_SHA-$$(echo $BUILD_ID | cut -c1-8)"
+        gcloud deploy releases create "$$RELEASE_NAME" \
           --project=$PROJECT_ID --region=us-central1 \
           --delivery-pipeline=catalog-pipeline \
           --skaffold-file=skaffold.yaml --source=. \
