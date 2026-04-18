@@ -49,6 +49,20 @@ variable "master_authorized_cidr_blocks" {
   default = []
 }
 
+# --- Config Sync ---
+
+variable "config_sync_repo" {
+  description = "HTTPS URL of the Git repo Config Sync will sync platform/ from."
+  type        = string
+  default     = "https://github.com/ayushgharat234/idp-project"
+}
+
+variable "config_sync_branch" {
+  description = "Branch Config Sync tracks."
+  type        = string
+  default     = "main"
+}
+
 # --- Multi-cloud fleet integration ---
 
 variable "eks_oidc_url" {
@@ -59,6 +73,12 @@ variable "eks_oidc_url" {
 
 variable "eks_cluster_name" {
   description = "Name of the EKS cluster to register in the GCP Fleet."
+  type        = string
+  default     = "opsnexus-eks-spoke"
+}
+
+variable "eks_membership_name" {
+  description = "Fleet membership name of the EKS cluster (set after gcloud fleet registration). Empty disables EKS Config Sync + Policy Controller feature membership."
   type        = string
   default     = "opsnexus-eks-spoke"
 }

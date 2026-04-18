@@ -38,3 +38,8 @@ variable "eks_allowed_cidrs" {
   type        = list(string)
   default     = ["0.0.0.0/0"]
 }
+
+variable "gcp_ci_sa_unique_id" {
+  description = "Unique numeric ID of the GCP CI service account (opsnexus-ci-sa). Used in the AWS IAM trust policy for Workload Identity Federation. Get with: gcloud iam service-accounts describe opsnexus-ci-sa@PROJECT.iam.gserviceaccount.com --format='value(uniqueId)'"
+  type        = string
+}

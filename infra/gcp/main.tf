@@ -220,6 +220,9 @@ module "fleet" {
     "gke-hub"   = { id = "${var.control_plane_project_id}/${var.region}/${module.gke_hub.cluster_name}" }
     "gke-spoke" = { id = "${var.data_plane_project_id}/${var.region}/${module.gke_spoke.cluster_name}" }
   }
+  config_sync_repo    = var.config_sync_repo
+  config_sync_branch  = var.config_sync_branch
+  eks_membership_name = var.eks_membership_name
 
   providers = {
     google = google.control

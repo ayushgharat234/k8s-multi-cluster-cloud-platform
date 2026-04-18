@@ -7,6 +7,14 @@ spec:
     kinds:
       - apiGroups: [""]
         kinds: ["Namespace"]
+    excludedNamespaces:
+      - kube-system
+      - kube-public
+      - gke-connect
+      - config-management-system
+      - config-management-monitoring
+      - gatekeeper-system
+      - resource-group-system
   parameters:
     labels:
       - key: "owner"

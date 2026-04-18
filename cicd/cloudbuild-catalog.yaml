@@ -110,6 +110,7 @@ steps:
         ECR_REPO="$$ECR_REGISTRY/opsnexus/storefront-catalog"
 
         # Install AWS CLI
+        apt-get update -qq && apt-get install -y -qq unzip curl
         curl -sSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
         unzip -q /tmp/awscliv2.zip -d /tmp/awscli
         /tmp/awscli/aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update

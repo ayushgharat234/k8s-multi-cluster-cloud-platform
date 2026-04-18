@@ -4,4 +4,5 @@ metadata:
   name: nexus-app
   labels:
     env: production
-    mesh: enabled # This automatically injects the ASM sidecar if using auto-injection
+    owner: platform-team
+    mesh: enabled

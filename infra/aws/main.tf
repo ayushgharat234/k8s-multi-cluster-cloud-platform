@@ -84,3 +84,89 @@ module "eks_spoke" {
 #   terraform output oidc_provider_url → gcp/variables.tf: eks_oidc_url
 
 data "aws_caller_identity" "current" {}
+
+# --- ECR REPOSITORIES ---
+locals {
+  ecr_repos = ["opsnexus/storefront-catalog"]
+}
+
+resource "aws_ecr_repository" "repos" {
+  for_each             = toset(local.ecr_repos)
+  name                 = each.value
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  encryption_configuration {
+    encryption_type = "AES256"
+  }
+}
+
+resource "aws_ecr_lifecycle_policy" "repos" {
+  for_each   = aws_ecr_repository.repos
+  repository = each.value.name
+
+  policy = jsonencode({
+    rules = [{
+      rulePriority = 1
+      description  = "Keep last 10 images, expire older ones"
+      selection = {
+        tagStatus   = "any"
+        countType   = "imageCountMoreThan"
+        countNumber = 10
+      }
+      action = { type = "expire" }
+    }]
+  })
+}
+
+# --- IAM ROLE: Cloud Build → ECR push via Workload Identity Federation ---
+# GCP Cloud Build SA exchanges a GCP OIDC token for temporary AWS creds.
+# Trust policy: only the specific GCP SA unique ID can assume this role.
+resource "aws_iam_role" "cloudbuild_ecr" {
+  name        = "opsnexus-cloudbuild-ecr-role"
+  description = "Assumed by GCP Cloud Build CI SA via OIDC WIF to push images to ECR"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Federated = "accounts.google.com" }
+      Action    = "sts:AssumeRoleWithWebIdentity"
+      Condition = {
+        StringEquals = {
+          "accounts.google.com:sub" = var.gcp_ci_sa_unique_id
+        }
+      }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "cloudbuild_ecr_push" {
+  name = "ECRPushPolicy"
+  role = aws_iam_role.cloudbuild_ecr.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:CompleteLayerUpload",
+          "ecr:InitiateLayerUpload",
+          "ecr:PutImage",
+          "ecr:UploadLayerPart"
+        ]
+        Resource = [for repo in aws_ecr_repository.repos : repo.arn]
+      },
+      {
+        Effect   = "Allow"
+        Action   = "ecr:GetAuthorizationToken"
+        Resource = "*"
+      }
+    ]
+  })
+}
