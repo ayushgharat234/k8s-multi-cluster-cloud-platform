@@ -7,4 +7,4 @@ github_repo       = "ayushgharat234/k8s-multi-cluster-cloud-platform"
 github_thumbprint = "6938fd4d98bab03faadb97b34396831e3780aea1"
 
 # Get this with: gcloud iam service-accounts describe opsnexus-ci-sa@dotted-saga-493511-a1.iam.gserviceaccount.com --format="value(uniqueId)"
-gcp_ci_sa_unique_id = "REPLACE_WITH_UNIQUE_ID"
+gcp_ci_sa_unique_id = "101269067509992697395"

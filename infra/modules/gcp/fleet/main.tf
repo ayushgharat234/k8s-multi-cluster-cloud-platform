@@ -15,7 +15,6 @@ resource "google_gke_hub_membership" "gke_members" {
 
   endpoint {
     gke_cluster {
-      # Expected format of each.value.id: "project_id/location/cluster_name"
       resource_link = "//container.googleapis.com/projects/${split("/", each.value.id)[0]}/locations/${split("/", each.value.id)[1]}/clusters/${split("/", each.value.id)[2]}"
     }
   }
@@ -23,31 +22,26 @@ resource "google_gke_hub_membership" "gke_members" {
 
 # 2. Enable Fleet Features (Managed Services)
 
-# Managed Service Mesh (ASM)
 resource "google_gke_hub_feature" "servicemesh" {
   name     = "servicemesh"
   location = "global"
   project  = var.project_id
 }
 
-# Config Management (GitOps)
 resource "google_gke_hub_feature" "configmanagement" {
   name     = "configmanagement"
   location = "global"
   project  = var.project_id
 }
 
-# Policy Controller (Governance)
 resource "google_gke_hub_feature" "policycontroller" {
   name     = "policycontroller"
   location = "global"
   project  = var.project_id
 }
 
-# 3. Per-cluster feature configuration
+# 3. Config Sync per cluster (configmanagement feature)
 
-# Config Sync + Policy Controller: GKE Hub and GKE Spoke
-# (clusters registered via Terraform — membership resource exists in this module)
 resource "google_gke_hub_feature_membership" "config_sync_gke" {
   for_each   = var.clusters
   project    = var.project_id
@@ -56,9 +50,10 @@ resource "google_gke_hub_feature_membership" "config_sync_gke" {
   membership = google_gke_hub_membership.gke_members[each.key].membership_id
 
   configmanagement {
-    version = "1.19"
+    version = "1.23.3"
 
     config_sync {
+      enabled = true
       git {
         sync_repo   = var.config_sync_repo
         sync_branch = var.config_sync_branch
@@ -67,24 +62,11 @@ resource "google_gke_hub_feature_membership" "config_sync_gke" {
       }
       source_format = "hierarchy"
     }
-
-    policy_controller {
-      enabled                    = true
-      template_library_installed = true
-      referential_rules_enabled  = true
-      audit_interval_seconds     = "60"
-    }
   }
 
-  depends_on = [
-    google_gke_hub_feature.configmanagement,
-    google_gke_hub_feature.policycontroller,
-  ]
+  depends_on = [google_gke_hub_feature.configmanagement]
 }
 
-# Config Sync + Policy Controller: EKS Spoke (opsnexus-eks-spoke)
-# Registered via gcloud CLI (not Terraform) — membership name is fixed/known.
-# Only created when var.eks_membership_name is set (after EKS registration).
 resource "google_gke_hub_feature_membership" "config_sync_eks" {
   count      = var.eks_membership_name != "" ? 1 : 0
   project    = var.project_id
@@ -93,9 +75,10 @@ resource "google_gke_hub_feature_membership" "config_sync_eks" {
   membership = var.eks_membership_name
 
   configmanagement {
-    version = "1.19"
+    version = "1.23.3"
 
     config_sync {
+      enabled = true
       git {
         sync_repo   = var.config_sync_repo
         sync_branch = var.config_sync_branch
@@ -104,17 +87,55 @@ resource "google_gke_hub_feature_membership" "config_sync_eks" {
       }
       source_format = "hierarchy"
     }
+  }
 
-    policy_controller {
-      enabled                    = true
-      template_library_installed = true
-      referential_rules_enabled  = true
-      audit_interval_seconds     = "60"
+  depends_on = [google_gke_hub_feature.configmanagement]
+}
+
+# 4. Policy Controller per cluster (separate policycontroller feature — required for ACM >= 1.21)
+
+resource "google_gke_hub_feature_membership" "policy_controller_gke" {
+  for_each   = var.clusters
+  project    = var.project_id
+  location   = "global"
+  feature    = google_gke_hub_feature.policycontroller.name
+  membership = google_gke_hub_membership.gke_members[each.key].membership_id
+
+  policycontroller {
+    policy_controller_hub_config {
+      install_spec = "INSTALL_SPEC_ENABLED"
+      referential_rules_enabled = true
+      policy_content {
+        template_library {
+          installation = "ALL"
+        }
+      }
+      audit_interval_seconds = 60
     }
   }
 
-  depends_on = [
-    google_gke_hub_feature.configmanagement,
-    google_gke_hub_feature.policycontroller,
-  ]
+  depends_on = [google_gke_hub_feature.policycontroller]
+}
+
+resource "google_gke_hub_feature_membership" "policy_controller_eks" {
+  count      = var.eks_membership_name != "" ? 1 : 0
+  project    = var.project_id
+  location   = "global"
+  feature    = google_gke_hub_feature.policycontroller.name
+  membership = var.eks_membership_name
+
+  policycontroller {
+    policy_controller_hub_config {
+      install_spec = "INSTALL_SPEC_ENABLED"
+      referential_rules_enabled = true
+      policy_content {
+        template_library {
+          installation = "ALL"
+        }
+      }
+      audit_interval_seconds = 60
+    }
+  }
+
+  depends_on = [google_gke_hub_feature.policycontroller]
 }

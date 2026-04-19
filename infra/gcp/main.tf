@@ -200,6 +200,9 @@ module "gke_spoke" {
   kms_cosign_key_id        = module.kms.cosign_key_id
   kms_cosign_public_key_pem = module.kms.cosign_public_key_pem
 
+  # Spoke BinAuth policy must accept the hub attestor (Cloud Build attests there)
+  hub_attestor_resource_name = "projects/${var.control_plane_project_id}/attestors/opsnexus-hub-attestor"
+
   master_ipv4_cidr_block = "172.16.0.16/28"
   master_authorized_cidr_blocks = var.master_authorized_cidr_blocks
 
@@ -370,6 +373,16 @@ resource "google_service_account_iam_member" "payment_wif_binding" {
   service_account_id = google_service_account.payment_sa.name
   role               = "roles/iam.workloadIdentityUser"
   member             = "serviceAccount:${var.data_plane_project_id}.svc.id.goog[nexus-app/payment-sa]"
+}
+
+# --- BINAUTHZ CROSS-PROJECT: allow spoke's BinAuth SA to verify hub attestor ---
+# The spoke cluster (data-493511) must verify attestations created in the control
+# project (dotted-saga-493511-a1) by opsnexus-hub-attestor.
+resource "google_project_iam_member" "spoke_binauthz_verifier" {
+  provider = google.control
+  project  = var.control_plane_project_id
+  role     = "roles/binaryauthorization.attestorsVerifier"
+  member   = "serviceAccount:service-${var.data_plane_project_number}@gcp-sa-binaryauthorization.iam.gserviceaccount.com"
 }
 
 # --- CLOUD BUILD SA PERMISSIONS ---

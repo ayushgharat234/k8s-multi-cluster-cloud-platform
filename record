@@ -1,0 +1,26 @@
+gcp_hsm_key = "projects/dotted-saga-493511-a1/locations/us-central1/keyRings/opsnexus-state-ring/cryptoKeys/opsnexus-state-key-v2"
+gcp_state_bucket = "opsnexus-tfstate-8b5ea7ba"
+aws_lock_table = "opsnexus-tfstate-lock"
+aws_state_bucket = "opsnexus-tfstate-0b48f6b3"
+aws_state_key_arn = "arn:aws:kms:us-east-1:262270938572:key/44a42337-1e38-42a3-8544-746f53643a84"
+
+Outputs:
+
+ci_service_account = "opsnexus-ci-sa@dotted-saga-493511-a1.iam.gserviceaccount.com"
+control_vpc_id = "projects/dotted-saga-493511-a1/global/networks/opsnexus-control-vpc"
+cosign_key_id = "projects/dotted-saga-493511-a1/locations/us-central1/keyRings/opsnexus-cluster-ring/cryptoKeys/cosign-key"
+gke_hub_endpoint = <sensitive>
+gke_hub_name = "opsnexus-hub-cluster"
+gke_secret_key_id = "projects/dotted-saga-493511-a1/locations/us-central1/keyRings/opsnexus-cluster-ring/cryptoKeys/gke-secret-key"
+gke_spoke_endpoint = <sensitive>
+gke_spoke_name = "opsnexus-spoke-cluster"
+lb_global_ip = "34.111.205.112"
+workload_identity_provider = "projects/630558234054/locations/global/workloadIdentityPools/opsnexus-pool/providers/github-provider"
+
+Outputs:
+
+ci_role_arn = "arn:aws:iam::262270938572:role/opsnexus-ci-role"
+eks_cluster_endpoint = <sensitive>
+eks_cluster_name = "opsnexus-eks-spoke"
+oidc_provider_arn = "arn:aws:iam::262270938572:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/56FF73668413839F1F80A2781525A85F"
+oidc_provider_url = "oidc.eks.us-east-1.amazonaws.com/id/56FF73668413839F1F80A2781525A85F"

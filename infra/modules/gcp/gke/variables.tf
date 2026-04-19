@@ -83,3 +83,9 @@ variable "machine_type" {
   type        = string
   default     = "e2-standard-2"
 }
+
+variable "hub_attestor_resource_name" {
+  description = "Full resource name of the hub attestor for cross-project BinAuth (spoke clusters only). Empty = use local attestor."
+  type        = string
+  default     = ""
+}

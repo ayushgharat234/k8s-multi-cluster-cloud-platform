@@ -197,7 +197,7 @@ resource "google_binary_authorization_policy" "policy" {
     evaluation_mode  = "REQUIRE_ATTESTATION"
     enforcement_mode = "ENFORCED_BLOCK_AND_AUDIT_LOG"
     require_attestations_by = [
-      google_binary_authorization_attestor.opsnexus_attestor.name
+      var.hub_attestor_resource_name != "" ? var.hub_attestor_resource_name : google_binary_authorization_attestor.opsnexus_attestor.name
     ]
   }
 
