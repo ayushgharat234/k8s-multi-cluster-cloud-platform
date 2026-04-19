@@ -96,6 +96,27 @@ steps:
           --public-key-id-override="projects/$PROJECT_ID/locations/us-central1/keyRings/opsnexus-cluster-ring/cryptoKeys/cosign-key"
     waitFor: [push]
 
+  # ── Refresh GAR imagePullSecret on EKS (short-lived OAuth2 token) ───────────
+  # Uses GKE Hub Connect Gateway — no AWS credentials needed.
+  # Requires CI SA: roles/gkehub.gatewayEditor + roles/gkehub.viewer
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: eks-gar-secret
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        gcloud components install kubectl --quiet 2>/dev/null || true
+        gcloud container fleet memberships get-credentials opsnexus-eks-spoke \
+          --project=$PROJECT_ID
+        TOKEN=$$(gcloud auth print-access-token)
+        kubectl create secret docker-registry google-gar-secret \
+          --docker-server=us-central1-docker.pkg.dev \
+          --docker-username=oauth2accesstoken \
+          --docker-password="$$TOKEN" \
+          --namespace=nexus-app \
+          --dry-run=client -o yaml | kubectl apply -f -
+    waitFor: [attest]
+
   # ── Cloud Deploy Release ───────────────────────────────────────────────────
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: deploy
@@ -110,7 +131,7 @@ steps:
           --delivery-pipeline=catalog-pipeline \
           --skaffold-file=skaffold.yaml --source=. \
           --images="storefront-catalog=us-central1-docker.pkg.dev/$PROJECT_ID/opsnexus/storefront-catalog@$$DIGEST"
-    waitFor: [attest]
+    waitFor: [eks-gar-secret]
 
 serviceAccount: 'projects/dotted-saga-493511-a1/serviceAccounts/opsnexus-ci-sa@dotted-saga-493511-a1.iam.gserviceaccount.com'
 
