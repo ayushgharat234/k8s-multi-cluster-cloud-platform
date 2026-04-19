@@ -118,6 +118,7 @@ resource "google_project_iam_member" "mesh_agent_data_access" {
   member  = "serviceAccount:service-${var.project_number}@gcp-sa-servicemesh.iam.gserviceaccount.com"
 }
 
+
 # 7. Wait for IAM propagation before cluster creation begins
 resource "time_sleep" "wait_for_iam" {
   create_duration = "90s"

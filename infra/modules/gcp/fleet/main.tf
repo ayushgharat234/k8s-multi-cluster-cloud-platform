@@ -47,14 +47,13 @@ resource "google_gke_hub_feature" "servicemesh" {
   location = "global"
   project  = var.project_id
 
-  # Fleet-level managed ASM — automatically installs and upgrades Istiod on every
-  # GKE cluster in the fleet. No per-cluster membership needed for managed mode.
   fleet_default_member_config {
     mesh {
       management = "MANAGEMENT_AUTOMATIC"
     }
   }
 }
+
 
 resource "google_gke_hub_feature" "configmanagement" {
   name     = "configmanagement"
@@ -164,14 +163,22 @@ resource "google_gke_hub_feature_membership" "policy_controller_gke" {
 
   policycontroller {
     policy_controller_hub_config {
-      install_spec = "INSTALL_SPEC_ENABLED"
+      install_spec              = "INSTALL_SPEC_ENABLED"
       referential_rules_enabled = true
+      audit_interval_seconds    = 60
       policy_content {
         template_library {
           installation = "ALL"
         }
+        bundles {
+          bundle_name = "policy-essentials-v2022"
+          exempted_namespaces = [
+            "kube-system", "gke-connect", "config-management-system",
+            "config-management-monitoring", "gatekeeper-system",
+            "resource-group-system", "asm-system", "istio-system",
+          ]
+        }
       }
-      audit_interval_seconds = 60
     }
   }
 
@@ -187,14 +194,14 @@ resource "google_gke_hub_feature_membership" "policy_controller_eks" {
 
   policycontroller {
     policy_controller_hub_config {
-      install_spec = "INSTALL_SPEC_ENABLED"
+      install_spec              = "INSTALL_SPEC_ENABLED"
       referential_rules_enabled = true
+      audit_interval_seconds    = 60
       policy_content {
         template_library {
-          installation = "ALL"
+          installation = "NOT_INSTALLED"
         }
       }
-      audit_interval_seconds = 60
     }
   }
 

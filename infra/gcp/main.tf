@@ -18,6 +18,9 @@ resource "google_project_service" "control_apis" {
     "anthospolicycontroller.googleapis.com",
     "containeranalysis.googleapis.com",
     "mesh.googleapis.com",
+    "anthos.googleapis.com",
+    "meshca.googleapis.com",
+    "meshconfig.googleapis.com",
     "gkehub.googleapis.com",
     "container.googleapis.com",
     "binaryauthorization.googleapis.com",
@@ -41,7 +44,12 @@ resource "google_project_service" "data_apis" {
     "container.googleapis.com",
     "containeranalysis.googleapis.com",
     "binaryauthorization.googleapis.com",
-    "cloudkms.googleapis.com"
+    "cloudkms.googleapis.com",
+    "mesh.googleapis.com",
+    "anthos.googleapis.com",
+    "meshca.googleapis.com",
+    "meshconfig.googleapis.com",
+    "gkehub.googleapis.com"
   ])
   project            = var.data_plane_project_id
   service            = each.key
