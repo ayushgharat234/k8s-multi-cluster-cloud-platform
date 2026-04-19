@@ -45,6 +45,20 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
+  name: allow-istio-sidecar-ports
+  namespace: nexus-app
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  - ports:
+    - port: 15021
+    - port: 15090
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
   name: allow-egress-cluster-dns-and-apis
   namespace: nexus-app
 spec:
