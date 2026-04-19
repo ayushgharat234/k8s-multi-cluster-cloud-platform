@@ -15,18 +15,20 @@ spec:
       - config-management-monitoring
       - gatekeeper-system
       - resource-group-system
+      - asm-system
+      - istio-system
   parameters:
     labels:
       - key: "owner"
 ---
 apiVersion: constraints.gatekeeper.sh/v1beta1
-kind: K8sPSPHostNetworkingPorts
+kind: K8sBlockNodePort
 metadata:
-  name: no-host-networking
+  name: no-node-port-services
 spec:
   match:
     kinds:
       - apiGroups: [""]
-        kinds: ["Pod"]
+        kinds: ["Service"]
     namespaces:
       - "nexus-app"

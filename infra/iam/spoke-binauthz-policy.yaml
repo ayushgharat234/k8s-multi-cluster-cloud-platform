@@ -1,0 +1,10 @@
+admissionWhitelistPatterns:
+- namePattern: registry.k8s.io/*
+- namePattern: gke.gcr.io/*
+- namePattern: gcr.io/google-containers/*
+- namePattern: gcr.io/gke-release/*
+defaultAdmissionRule:
+  evaluationMode: REQUIRE_ATTESTATION
+  enforcementMode: ENFORCED_BLOCK_AND_AUDIT_LOG
+  requireAttestationsBy:
+  - projects/dotted-saga-493511-a1/attestors/opsnexus-hub-attestor
