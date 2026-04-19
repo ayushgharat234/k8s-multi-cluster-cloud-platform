@@ -1,3 +1,24 @@
+apiVersion: clusterregistry.k8s.io/v1alpha1
+kind: Cluster
+metadata:
+  name: gke-hub
+  labels:
+    provider: gcp
+---
+apiVersion: clusterregistry.k8s.io/v1alpha1
+kind: Cluster
+metadata:
+  name: gke-spoke
+  labels:
+    provider: gcp
+---
+apiVersion: clusterregistry.k8s.io/v1alpha1
+kind: Cluster
+metadata:
+  name: opsnexus-eks-spoke
+  labels:
+    provider: aws
+---
 apiVersion: configmanagement.gke.io/v1
 kind: ClusterSelector
 metadata:
