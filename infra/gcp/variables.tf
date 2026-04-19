@@ -36,8 +36,46 @@ variable "github_repo" {
 }
 
 variable "domain" {
-  description = "Fully-qualified domain name for the global HTTPS load balancer certificate."
+  description = "Fully-qualified domain name for the global HTTPS load balancer certificate. Empty = HTTP-only."
   type        = string
+  default     = ""
+}
+
+variable "dns_zone_dns_name" {
+  description = "Cloud DNS zone dns_name (e.g. 'example.com.'). Empty = skip DNS zone creation."
+  type        = string
+  default     = ""
+}
+
+variable "frontend_neg_ids" {
+  description = "NEG self-links for the frontend service. Populated after first workload deploy."
+  type        = list(string)
+  default     = []
+}
+
+variable "payment_neg_ids" {
+  description = "NEG self-links for the payment service. Populated after first workload deploy."
+  type        = list(string)
+  default     = []
+}
+
+variable "iap_client_id" {
+  description = "OAuth 2.0 client ID for IAP on the frontend. Empty = IAP disabled."
+  type        = string
+  default     = ""
+}
+
+variable "iap_client_secret" {
+  description = "OAuth 2.0 client secret for IAP."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "iap_members" {
+  description = "IAM members granted IAP access (e.g. ['user:you@example.com', 'group:team@example.com'])."
+  type        = list(string)
+  default     = []
 }
 
 variable "master_authorized_cidr_blocks" {
@@ -54,7 +92,7 @@ variable "master_authorized_cidr_blocks" {
 variable "config_sync_repo" {
   description = "HTTPS URL of the Git repo Config Sync will sync platform/ from."
   type        = string
-  default     = "https://github.com/ayushgharat234/idp-project"
+  default     = "https://github.com/ayushgharat234/k8s-multi-cluster-cloud-platform"
 }
 
 variable "config_sync_branch" {

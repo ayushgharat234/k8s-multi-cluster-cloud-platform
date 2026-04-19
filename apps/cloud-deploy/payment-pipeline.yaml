@@ -2,11 +2,32 @@ apiVersion: deploy.cloud.google.com/v1
 kind: DeliveryPipeline
 metadata:
   name: payment-pipeline
-description: "storefront-payment → GKE Spoke — standard deployment"
+description: "storefront-payment → GKE Spoke — canary deployment with auto-rollback"
 serialPipeline:
   stages:
   - targetId: gke-spoke
     profiles: [gke-payment]
     strategy:
-      standard:
-        verify: false
+      canary:
+        runtimeConfig:
+          kubernetes:
+            serviceNetworking:
+              deployment: storefront-payment
+              service: storefront-payment
+        canaryDeployment:
+          percentages: [25, 100]
+          verify: true
+---
+apiVersion: deploy.cloud.google.com/v1
+kind: Automation
+metadata:
+  name: payment-auto-rollback
+  deliveryPipeline: payment-pipeline
+suspended: false
+selector:
+  targets:
+  - id: "*"
+rules:
+- rollbackRule:
+    id: rollback-release
+    wait: 0s

@@ -79,10 +79,14 @@ kind: Service
 metadata:
   name: storefront-payment
   namespace: nexus-app
+  annotations:
+    # Creates a standalone zonal NEG named "payment-neg" for container-native LB
+    cloud.google.com/neg: '{"exposed_ports":{"8080":{"name":"payment-neg"}}}'
 spec:
   type: ClusterIP
   ports:
-  - port: 8080
+  - name: http
+    port: 8080
     targetPort: 8080
   selector:
     app: storefront-payment

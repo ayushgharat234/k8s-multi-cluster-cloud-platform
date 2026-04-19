@@ -31,7 +31,11 @@ resource "google_project_service" "control_apis" {
     "cloudbuild.googleapis.com",
     "gkemulticloud.googleapis.com",
     "gkeconnect.googleapis.com",
-    "connectgateway.googleapis.com"
+    "connectgateway.googleapis.com",
+    "certificatemanager.googleapis.com",
+    "dns.googleapis.com",
+    "iap.googleapis.com",
+    "privateca.googleapis.com"
   ])
   project            = var.control_plane_project_id
   service            = each.key
@@ -49,7 +53,11 @@ resource "google_project_service" "data_apis" {
     "anthos.googleapis.com",
     "meshca.googleapis.com",
     "meshconfig.googleapis.com",
-    "gkehub.googleapis.com"
+    "gkehub.googleapis.com",
+    "certificatemanager.googleapis.com",
+    "dns.googleapis.com",
+    "iap.googleapis.com",
+    "compute.googleapis.com"
   ])
   project            = var.data_plane_project_id
   service            = each.key
@@ -192,9 +200,10 @@ module "gke_hub" {
 
 # --- GKE SPOKE (Workload Cluster — Data Project) ---
 module "gke_spoke" {
-  source         = "../modules/gcp/gke"
-  project_id     = var.data_plane_project_id
-  project_number = var.data_plane_project_number
+  source           = "../modules/gcp/gke"
+  project_id       = var.data_plane_project_id
+  project_number   = var.data_plane_project_number
+  fleet_project_id = var.control_plane_project_id
   region         = var.region
   env_name       = "${var.env_name}-spoke"
   vpc_id         = module.vpc_data.vpc_id
@@ -435,13 +444,47 @@ module "vpn_data" {
 }
 
 # --- GLOBAL LOAD BALANCER ---
+# Lives in the data project so backend services can reference NEGs (cross-project NEGs are not allowed).
 module "lb" {
   source     = "../modules/gcp/lb"
-  project_id = var.control_plane_project_id
+  project_id = var.data_plane_project_id
   env_name   = var.env_name
   domain     = var.domain
 
+  dns_zone_dns_name = var.dns_zone_dns_name
+
+  frontend_neg_ids = var.frontend_neg_ids
+  payment_neg_ids  = var.payment_neg_ids
+
+  iap_client_id     = var.iap_client_id
+  iap_client_secret = var.iap_client_secret
+  iap_members       = var.iap_members
+
   providers = {
-    google = google.control
+    google = google.data
   }
+
+  depends_on = [google_project_service.data_apis]
+}
+
+# --- FIREWALL: Allow Google Front End health-check probes to GKE spoke nodes ---
+# Source ranges are the GFE and health-check IP ranges published by Google.
+resource "google_compute_firewall" "allow_lb_health_checks" {
+  provider = google.data
+  name     = "${var.env_name}-allow-lb-hc"
+  project  = var.data_plane_project_id
+  network  = module.vpc_data.vpc_id
+
+  direction = "INGRESS"
+  allow {
+    protocol = "tcp"
+    ports    = ["80", "8080"]
+  }
+
+  source_ranges = [
+    "130.211.0.0/22",
+    "35.191.0.0/16",
+  ]
+
+  target_tags = ["gke-node"]
 }

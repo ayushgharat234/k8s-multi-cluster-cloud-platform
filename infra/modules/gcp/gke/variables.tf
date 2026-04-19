@@ -3,6 +3,12 @@ variable "project_id" {
   type        = string
 }
 
+variable "fleet_project_id" {
+  description = "Fleet host project ID for Workload Identity pool. Defaults to project_id for single-project setups."
+  type        = string
+  default     = ""
+}
+
 variable "project_number" {
   description = "The GCP Project Number (for service agent IAM bindings)."
   type        = string

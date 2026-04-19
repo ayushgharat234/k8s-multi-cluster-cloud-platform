@@ -71,10 +71,14 @@ kind: Service
 metadata:
   name: storefront-frontend
   namespace: nexus-app
+  annotations:
+    # Creates a standalone zonal NEG named "frontend-neg" for container-native LB
+    cloud.google.com/neg: '{"exposed_ports":{"80":{"name":"frontend-neg"}}}'
 spec:
   type: ClusterIP
   ports:
-  - port: 80
+  - name: http
+    port: 80
     targetPort: 80
   selector:
     app: storefront-frontend

@@ -1,17 +1,3 @@
-# =============================================================================
-# Skaffold — Cloud Deploy Manifest Renderer (per-service profiles)
-# =============================================================================
-# Service placement:
-#   GKE Spoke (data-493511):
-#     - frontend  → profile: gke-frontend  → kustomize: apps/storefront/gke-frontend
-#     - payment   → profile: gke-payment   → kustomize: apps/storefront/gke-payment
-#   EKS Spoke (AWS):
-#     - catalog   → profile: eks           → kustomize: apps/storefront/eks
-#
-# Cloud Deploy passes --profile=<name> derived from the pipeline stage's
-# profiles field. The --images flag substitutes image digests per release.
-# =============================================================================
-
 apiVersion: skaffold/v4beta7
 kind: Config
 metadata:
@@ -35,6 +21,16 @@ profiles:
           - apps/storefront/frontend
     deploy:
       kubectl: {}
+    verify:
+    - name: frontend-health
+      container:
+        name: verify-frontend
+        image: curlimages/curl:8.7.1
+        command: ["sh", "-c"]
+        args:
+          - |
+            curl -sf http://storefront-frontend.nexus-app.svc.cluster.local/health \
+              || (echo "frontend health check failed" && exit 1)
 
   # ── GKE: payment only ─────────────────────────────────────────────────────
   - name: gke-payment
@@ -44,6 +40,16 @@ profiles:
           - apps/storefront/payment
     deploy:
       kubectl: {}
+    verify:
+    - name: payment-health
+      container:
+        name: verify-payment
+        image: curlimages/curl:8.7.1
+        command: ["sh", "-c"]
+        args:
+          - |
+            curl -sf http://storefront-payment.nexus-app.svc.cluster.local:8080/health \
+              || (echo "payment health check failed" && exit 1)
 
   # ── EKS: catalog only ─────────────────────────────────────────────────────
   - name: eks
@@ -53,3 +59,13 @@ profiles:
           - apps/storefront/catalog
     deploy:
       kubectl: {}
+    verify:
+    - name: catalog-health
+      container:
+        name: verify-catalog
+        image: curlimages/curl:8.7.1
+        command: ["sh", "-c"]
+        args:
+          - |
+            curl -sf http://storefront-catalog.nexus-app.svc.cluster.local:8080/health \
+              || (echo "catalog health check failed" && exit 1)

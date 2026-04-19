@@ -2,11 +2,34 @@ apiVersion: deploy.cloud.google.com/v1
 kind: DeliveryPipeline
 metadata:
   name: frontend-pipeline
-description: "storefront-frontend → GKE Spoke — standard deployment"
+description: "storefront-frontend → GKE Spoke — canary deployment with auto-rollback"
 serialPipeline:
   stages:
   - targetId: gke-spoke
     profiles: [gke-frontend]
     strategy:
-      standard:
-        verify: false
+      canary:
+        runtimeConfig:
+          kubernetes:
+            serviceNetworking:
+              deployment: storefront-frontend
+              service: storefront-frontend
+        canaryDeployment:
+          percentages: [25, 100]
+          verify: true
+---
+# Automation is a separate resource type — deployed alongside the pipeline.
+# gcloud deploy apply --file=frontend-pipeline.yaml --region=us-central1 --project=...
+apiVersion: deploy.cloud.google.com/v1
+kind: Automation
+metadata:
+  name: frontend-auto-rollback
+  deliveryPipeline: frontend-pipeline
+suspended: false
+selector:
+  targets:
+  - id: "*"
+rules:
+- rollbackRule:
+    id: rollback-release
+    wait: 0s

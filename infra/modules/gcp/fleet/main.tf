@@ -18,6 +18,10 @@ resource "google_gke_hub_membership" "gke_members" {
       resource_link = "//container.googleapis.com/projects/${split("/", each.value.id)[0]}/locations/${split("/", each.value.id)[1]}/clusters/${split("/", each.value.id)[2]}"
     }
   }
+
+  authority {
+    issuer = "https://container.googleapis.com/v1/projects/${split("/", each.value.id)[0]}/locations/${split("/", each.value.id)[1]}/clusters/${split("/", each.value.id)[2]}"
+  }
 }
 
 # 2. Enable Fleet Features (Managed Services)
