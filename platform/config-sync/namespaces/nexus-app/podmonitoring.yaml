@@ -3,6 +3,8 @@ kind: PodMonitoring
 metadata:
   name: nexus-app-metrics
   namespace: nexus-app
+  annotations:
+    configmanagement.gke.io/cluster-selector: selector-gcp
 spec:
   selector:
     matchLabels:
