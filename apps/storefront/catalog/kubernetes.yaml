@@ -4,7 +4,6 @@ metadata:
   name: catalog-sa
   namespace: nexus-app
   annotations:
-    # AWS IRSA: Linking K8s SA to AWS IAM Role
     eks.amazonaws.com/role-arn: arn:aws:iam::262270938572:role/opsnexus-catalog-role
 ---
 apiVersion: apps/v1
@@ -21,18 +20,49 @@ spec:
     metadata:
       labels:
         app: storefront-catalog
+        app.kubernetes.io/part-of: storefront
     spec:
       serviceAccountName: catalog-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      volumes:
+      - name: tmp
+        emptyDir: {}
       imagePullSecrets:
-        - name: google-gar-secret
+      - name: google-gar-secret
       containers:
       - name: catalog
         image: storefront-catalog
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
         env:
         - name: DYNAMODB_TABLE
           value: "opsnexus-catalog"
+        - name: AWS_REGION
+          value: "us-east-1"
         ports:
         - containerPort: 8080
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
         resources:
           requests:
             cpu: 50m
@@ -46,6 +76,9 @@ kind: Service
 metadata:
   name: storefront-catalog
   namespace: nexus-app
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internal"
 spec:
   type: LoadBalancer
   ports:

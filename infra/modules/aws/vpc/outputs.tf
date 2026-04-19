@@ -17,3 +17,8 @@ output "nat_gateway_ip" {
   description = "The public IP of the NAT Gateway."
   value       = aws_eip.nat.public_ip
 }
+
+output "private_route_table_id" {
+  description = "ID of the private route table — used for VPN route propagation."
+  value       = aws_route_table.private.id
+}

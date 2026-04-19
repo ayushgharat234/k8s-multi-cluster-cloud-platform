@@ -84,6 +84,23 @@ module "eks_spoke" {
 # After applying this stack, pass eks_spoke outputs to the GCP stack:
 #   terraform output oidc_provider_url → gcp/variables.tf: eks_oidc_url
 
+# --- SITE-TO-SITE VPN TO GCP ---
+# Activated when gcp_vpn_gateway_ip is provided (apply GCP stack phase 1 first):
+#   terraform apply -target="module.vpn_data" (in infra/gcp) → get gcp_vpn_gateway_ip output
+#   terraform apply -var="gcp_vpn_gateway_ip=<IP>" (in infra/aws)
+#   Pass AWS tunnel outputs back to infra/gcp as vpn_* variables
+module "vpn" {
+  count  = var.gcp_vpn_gateway_ip != "" ? 1 : 0
+  source = "../modules/aws/vpn"
+
+  env_name                 = var.env_name
+  vpc_id                   = module.vpc.vpc_id
+  gcp_vpn_gateway_ip       = var.gcp_vpn_gateway_ip
+  private_route_table_ids  = [module.vpc.private_route_table_id]
+  cluster_security_group_id = module.eks_spoke.cluster_security_group_id
+  gcp_cidr_ranges          = ["10.16.0.0/20", "10.17.0.0/16", "10.18.0.0/20"]
+}
+
 data "aws_caller_identity" "current" {}
 
 # --- ECR REPOSITORIES ---

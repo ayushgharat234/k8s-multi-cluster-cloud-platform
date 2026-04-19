@@ -53,3 +53,9 @@ output "gke_secret_key_id" {
   description = "Full resource ID of the GKE secret-encryption KMS key."
   value       = module.kms.gke_secret_key_id
 }
+
+# ─── VPN (pass to infra/aws as gcp_vpn_gateway_ip) ───────────────────────────
+output "gcp_vpn_gateway_ip" {
+  description = "External IP of GCP HA VPN Gateway interface 0 — pass to infra/aws as gcp_vpn_gateway_ip."
+  value       = module.vpn_data.vpn_gateway_ip
+}

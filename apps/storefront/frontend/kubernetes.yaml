@@ -12,17 +12,44 @@ spec:
     metadata:
       labels:
         app: storefront-frontend
+        app.kubernetes.io/part-of: storefront
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        seccompProfile:
+          type: RuntimeDefault
+      volumes:
+      - name: tmp-nginx
+        emptyDir: {}
       containers:
       - name: frontend
         image: storefront-frontend
         env:
-        - name: PAYMENT_SERVICE_URL
-          value: "http://storefront-payment.nexus-app.svc.cluster.local:8080"
-        - name: CATALOG_SERVICE_URL
-          value: "http://storefront-catalog.nexus-app.svc.cluster.local:8080"
+        - name: CATALOG_URL
+          value: "http://PLACEHOLDER_EKS_LB:8080"
         ports:
         - containerPort: 80
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        volumeMounts:
+        - name: tmp-nginx
+          mountPath: /tmp/nginx
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
         resources:
           requests:
             cpu: 100m
@@ -37,7 +64,7 @@ metadata:
   name: storefront-frontend
   namespace: nexus-app
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   ports:
   - port: 80
     targetPort: 80

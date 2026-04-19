@@ -405,6 +405,35 @@ resource "google_service_account_iam_member" "cloudbuild_use_ci_sa" {
   depends_on         = [module.identity]
 }
 
+# --- SITE-TO-SITE VPN TO AWS (Data VPC — where GKE spoke lives) ---
+# Phase 1: apply -target="module.vpn_data" to create gateway and get its IP.
+# Phase 2: pass IP to infra/aws, apply AWS VPN, get tunnel outputs.
+# Phase 3: pass tunnel values as vpn_* variables here, full apply.
+module "vpn_data" {
+  source = "../modules/gcp/vpn"
+
+  env_name     = "${var.env_name}-data"
+  vpc_id       = module.vpc_data.vpc_id
+  region       = var.region
+  pod_cidr     = "10.17.0.0/16"
+  service_cidr = "10.18.0.0/20"
+
+  aws_tunnel1_address             = var.aws_vpn_tunnel1_address
+  aws_tunnel1_psk                 = var.aws_vpn_tunnel1_psk
+  aws_tunnel1_cgw_inside_address  = var.aws_vpn_tunnel1_cgw_inside_address
+  aws_tunnel1_vgw_inside_address  = var.aws_vpn_tunnel1_vgw_inside_address
+  aws_tunnel2_address             = var.aws_vpn_tunnel2_address
+  aws_tunnel2_psk                 = var.aws_vpn_tunnel2_psk
+  aws_tunnel2_cgw_inside_address  = var.aws_vpn_tunnel2_cgw_inside_address
+  aws_tunnel2_vgw_inside_address  = var.aws_vpn_tunnel2_vgw_inside_address
+
+  providers = {
+    google = google.data
+  }
+
+  depends_on = [module.vpc_data]
+}
+
 # --- GLOBAL LOAD BALANCER ---
 module "lb" {
   source     = "../modules/gcp/lb"

@@ -4,30 +4,87 @@
     <meta charset="UTF-8">
     <title>OpsNexus Sovereign Storefront</title>
     <style>
-        body { font-family: 'Inter', sans-serif; background: #0f172a; color: #f1f5f9; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .card { background: #1e293b; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border: 1px solid #334155; text-align: center; }
-        h1 { color: #38bdf8; }
-        .status { margin-top: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-        .node { padding: 1rem; border-radius: 0.5rem; background: #334155; }
-        .tag { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; }
-        .pulse { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #10b981; box-shadow: 0 0 0 rgba(16, 185, 129, 0.4); animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: #0f172a; color: #f1f5f9; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; }
+        h1 { color: #38bdf8; margin-bottom: 0.25rem; }
+        .subtitle { color: #94a3b8; font-size: 0.9rem; margin-bottom: 2rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; width: 100%; max-width: 960px; }
+        .card { background: #1e293b; border: 1px solid #334155; border-radius: 1rem; padding: 1.5rem; }
+        .card-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+        .badge { font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .badge-gcp { background: #1d4ed8; color: #bfdbfe; }
+        .badge-aws { background: #92400e; color: #fde68a; }
+        .card h2 { font-size: 1rem; color: #e2e8f0; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+        .dot-green { background: #10b981; box-shadow: 0 0 6px #10b981; }
+        .dot-red { background: #ef4444; }
+        .dot-grey { background: #64748b; }
+        .field { margin-top: 0.75rem; font-size: 0.85rem; color: #94a3b8; }
+        .field span { color: #f1f5f9; font-weight: 500; }
+        .items-list { margin-top: 0.5rem; font-size: 0.8rem; color: #cbd5e1; list-style: none; }
+        .items-list li { padding: 0.25rem 0; border-bottom: 1px solid #334155; }
+        .loading { color: #64748b; font-style: italic; font-size: 0.85rem; }
+        .error-msg { color: #f87171; font-size: 0.8rem; margin-top: 0.5rem; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h1>OpsNexus Storefront</h1>
-        <p>Sovereign Multi-Cloud Microservices</p>
-        <div class="status">
-            <div class="node">
-                <div class="tag">GCP Hub (GKE)</div>
-                <div class="pulse"></div> Connected
+    <h1>OpsNexus Storefront</h1>
+    <p class="subtitle">Sovereign Multi-Cloud Platform &mdash; Live Service Status</p>
+
+    <div class="grid">
+        <!-- Frontend -->
+        <div class="card">
+            <div class="card-header">
+                <span class="badge badge-gcp">GCP · GKE Spoke</span>
+                <h2>storefront-frontend</h2>
             </div>
-            <div class="node">
-                <div class="tag">AWS Spoke (EKS)</div>
-                <div class="pulse"></div> Connected
+            <div class="field"><span class="status-dot dot-green"></span>Running — this service</div>
+            <div class="field">Mesh: <span>Istio sidecar · STRICT mTLS</span></div>
+            <div class="field">Identity: <span>Workload Identity</span></div>
+        </div>
+
+        <!-- Payment -->
+        <div class="card">
+            <div class="card-header">
+                <span class="badge badge-gcp">GCP · GKE Spoke</span>
+                <h2>storefront-payment</h2>
             </div>
+            <div id="payment-status" class="loading">Fetching...</div>
+        </div>
+
+        <!-- Catalog -->
+        <div class="card">
+            <div class="card-header">
+                <span class="badge badge-aws">AWS · EKS Spoke</span>
+                <h2>storefront-catalog</h2>
+            </div>
+            <div id="catalog-status" class="loading">Fetching...</div>
         </div>
     </div>
+
+    <script>
+        async function fetchService(url, elementId, renderFn) {
+            const el = document.getElementById(elementId);
+            try {
+                const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+                const data = await res.json();
+                el.innerHTML = renderFn(data);
+            } catch (e) {
+                el.innerHTML = `<span class="status-dot dot-red"></span><span style="color:#f87171">Unreachable</span><div class="error-msg">${e.message}</div>`;
+            }
+        }
+
+        fetchService('/api/payment/health', 'payment-status', (d) => `
+            <span class="status-dot dot-green"></span><span style="color:#10b981">Healthy</span>
+            <div class="field">Cloud: <span>${d.cloud}</span></div>
+            <div class="field">Identity: <span>GCP Workload Identity</span></div>
+        `);
+
+        fetchService('/api/catalog/health', 'catalog-status', (d) => `
+            <span class="status-dot dot-green"></span><span style="color:#10b981">Healthy</span>
+            <div class="field">Cloud: <span>${d.cloud}</span></div>
+            <div class="field">Identity: <span>AWS IRSA</span></div>
+        `);
+    </script>
 </body>
 </html>

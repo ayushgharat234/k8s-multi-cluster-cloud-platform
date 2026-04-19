@@ -23,3 +23,31 @@ output "ci_role_arn" {
   description = "ARN of the GitHub Actions CI/CD IAM role."
   value       = module.identity.ci_role_arn
 }
+
+# --- VPN outputs (only populated when gcp_vpn_gateway_ip is set) ---
+output "vpn_tunnel1_address" {
+  value = length(module.vpn) > 0 ? module.vpn[0].tunnel1_address : ""
+}
+output "vpn_tunnel1_preshared_key" {
+  value     = length(module.vpn) > 0 ? module.vpn[0].tunnel1_preshared_key : ""
+  sensitive = true
+}
+output "vpn_tunnel1_cgw_inside_address" {
+  value = length(module.vpn) > 0 ? module.vpn[0].tunnel1_cgw_inside_address : ""
+}
+output "vpn_tunnel1_vgw_inside_address" {
+  value = length(module.vpn) > 0 ? module.vpn[0].tunnel1_vgw_inside_address : ""
+}
+output "vpn_tunnel2_address" {
+  value = length(module.vpn) > 0 ? module.vpn[0].tunnel2_address : ""
+}
+output "vpn_tunnel2_preshared_key" {
+  value     = length(module.vpn) > 0 ? module.vpn[0].tunnel2_preshared_key : ""
+  sensitive = true
+}
+output "vpn_tunnel2_cgw_inside_address" {
+  value = length(module.vpn) > 0 ? module.vpn[0].tunnel2_cgw_inside_address : ""
+}
+output "vpn_tunnel2_vgw_inside_address" {
+  value = length(module.vpn) > 0 ? module.vpn[0].tunnel2_vgw_inside_address : ""
+}

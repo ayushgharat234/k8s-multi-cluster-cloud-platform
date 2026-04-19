@@ -1,0 +1,31 @@
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-frontend-to-payment
+  namespace: nexus-app
+  annotations:
+    configmanagement.gke.io/cluster-selector: selector-gcp
+spec:
+  selector:
+    matchLabels:
+      app: storefront-payment
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - "cluster.local/ns/nexus-app/sa/default"
+    to:
+    - operation:
+        paths: ["/health", "/payment/config"]
+        methods: ["GET"]
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: deny-all-nexus-app
+  namespace: nexus-app
+  annotations:
+    configmanagement.gke.io/cluster-selector: selector-gcp
+spec:
+  {}

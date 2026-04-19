@@ -88,7 +88,7 @@ resource "google_kms_crypto_key" "cosign_key" {
 
   # Asymmetric keys do not support automatic rotation; versions are created manually
   lifecycle {
-    prevent_destroy = false
+    prevent_destroy = true
   }
 }
 

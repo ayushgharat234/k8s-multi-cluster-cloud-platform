@@ -4,7 +4,6 @@ metadata:
   name: payment-sa
   namespace: nexus-app
   annotations:
-    # GCP Workload Identity: Linking K8s SA to GCP Service Account
     iam.gke.io/gcp-service-account: opsnexus-payment-sa@dotted-saga-493511-a1.iam.gserviceaccount.com
 ---
 apiVersion: apps/v1
@@ -21,16 +20,47 @@ spec:
     metadata:
       labels:
         app: storefront-payment
+        app.kubernetes.io/part-of: storefront
     spec:
       serviceAccountName: payment-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      volumes:
+      - name: tmp
+        emptyDir: {}
       containers:
       - name: payment
         image: storefront-payment
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
         env:
         - name: GCP_SECRET_NAME
           value: "payment-api-key"
+        - name: GOOGLE_CLOUD_PROJECT
+          value: "dotted-saga-493511-a1"
         ports:
         - containerPort: 8080
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
         resources:
           requests:
             cpu: 100m

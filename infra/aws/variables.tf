@@ -43,3 +43,9 @@ variable "gcp_ci_sa_unique_id" {
   description = "Unique numeric ID of the GCP CI service account (opsnexus-ci-sa). Used in the AWS IAM trust policy for Workload Identity Federation. Get with: gcloud iam service-accounts describe opsnexus-ci-sa@PROJECT.iam.gserviceaccount.com --format='value(uniqueId)'"
   type        = string
 }
+
+variable "gcp_vpn_gateway_ip" {
+  description = "External IP of the GCP HA VPN Gateway interface 0. Obtain from: cd infra/gcp && terraform output gcp_vpn_gateway_ip"
+  type        = string
+  default     = ""
+}

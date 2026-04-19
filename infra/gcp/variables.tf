@@ -87,3 +87,39 @@ variable "eks_membership_name" {
 variable "subnet_cidr"  { default = "10.0.0.0/20" }
 variable "pod_cidr"     { default = "10.1.0.0/16" }
 variable "service_cidr" { default = "10.2.0.0/20" }
+
+# --- AWS VPN tunnel values (phase 3 — pass from infra/aws terraform output) ---
+variable "aws_vpn_tunnel1_address" {
+  type    = string
+  default = ""
+}
+variable "aws_vpn_tunnel1_psk" {
+  type      = string
+  default   = ""
+  sensitive = true
+}
+variable "aws_vpn_tunnel1_cgw_inside_address" {
+  type    = string
+  default = ""
+}
+variable "aws_vpn_tunnel1_vgw_inside_address" {
+  type    = string
+  default = ""
+}
+variable "aws_vpn_tunnel2_address" {
+  type    = string
+  default = ""
+}
+variable "aws_vpn_tunnel2_psk" {
+  type      = string
+  default   = ""
+  sensitive = true
+}
+variable "aws_vpn_tunnel2_cgw_inside_address" {
+  type    = string
+  default = ""
+}
+variable "aws_vpn_tunnel2_vgw_inside_address" {
+  type    = string
+  default = ""
+}
