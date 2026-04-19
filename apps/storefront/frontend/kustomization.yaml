@@ -3,7 +3,3 @@ kind: Kustomization
 
 resources:
   - kubernetes.yaml
-
-images:
-  - name: storefront-frontend
-    newName: us-central1-docker.pkg.dev/dotted-saga-493511-a1/opsnexus/storefront-frontend
