@@ -28,7 +28,7 @@ master_authorized_cidr_blocks = [
 
 # ─── CONFIG SYNC ─────────────────────────────────────────────────────────────
 config_sync_repo   = "https://github.com/ayushgharat234/k8s-multi-cluster-cloud-platform"
-config_sync_branch = "master"
+config_sync_branch  = "prod"
 
 # ─── MULTI-CLOUD FLEET (AWS EKS) ─────────────────────────────────────────────
 # Populated in Wave 3 (after `terraform apply` in infra/aws):
