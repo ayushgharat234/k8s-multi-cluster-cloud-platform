@@ -28,6 +28,21 @@ resource "google_gke_hub_feature" "servicemesh" {
   project  = var.project_id
 }
 
+# Bind managed ASM to each GKE cluster
+resource "google_gke_hub_feature_membership" "service_mesh_gke" {
+  for_each   = var.clusters
+  project    = var.project_id
+  location   = "global"
+  feature    = google_gke_hub_feature.servicemesh.name
+  membership = google_gke_hub_membership.gke_members[each.key].membership_id
+
+  mesh {
+    management = "MANAGEMENT_AUTOMATIC"
+  }
+
+  depends_on = [google_gke_hub_feature.servicemesh]
+}
+
 resource "google_gke_hub_feature" "configmanagement" {
   name     = "configmanagement"
   location = "global"
@@ -38,6 +53,39 @@ resource "google_gke_hub_feature" "policycontroller" {
   name     = "policycontroller"
   location = "global"
   project  = var.project_id
+
+  # Fleet-level defaults — equivalent to "Configure fleet settings" in the UI.
+  # Every new cluster joining the fleet inherits this automatically.
+  fleet_default_member_config {
+    policycontroller {
+      policy_controller_hub_config {
+        install_spec              = "INSTALL_SPEC_ENABLED"
+        audit_interval_seconds    = 60
+        referential_rules_enabled = true
+
+        policy_content {
+          template_library {
+            installation = "ALL"
+          }
+          # Policy Essentials bundle: CIS K8s Benchmark, Pod Security Standards,
+          # general best-practice guardrails — matches what the UI "Configure fleet settings" applies
+          bundles {
+            bundle = "policy-essentials-v2022"
+            exempted_namespaces = [
+              "kube-system",
+              "gke-connect",
+              "config-management-system",
+              "config-management-monitoring",
+              "gatekeeper-system",
+              "resource-group-system",
+              "asm-system",
+              "istio-system",
+            ]
+          }
+        }
+      }
+    }
+  }
 }
 
 # 3. Config Sync per cluster (configmanagement feature)

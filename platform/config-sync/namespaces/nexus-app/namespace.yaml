@@ -5,4 +5,4 @@ metadata:
   labels:
     env: production
     owner: platform-team
-    mesh: enabled
+    istio-injection: enabled
