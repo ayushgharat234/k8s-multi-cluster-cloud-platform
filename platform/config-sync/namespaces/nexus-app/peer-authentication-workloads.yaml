@@ -1,0 +1,33 @@
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: frontend-lb-health-check
+  namespace: nexus-app
+  annotations:
+    configmanagement.gke.io/cluster-selector: selector-gcp
+spec:
+  selector:
+    matchLabels:
+      app: storefront-frontend
+  mtls:
+    mode: STRICT
+  portLevelMtls:
+    80:
+      mode: PERMISSIVE
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: payment-lb-health-check
+  namespace: nexus-app
+  annotations:
+    configmanagement.gke.io/cluster-selector: selector-gcp
+spec:
+  selector:
+    matchLabels:
+      app: storefront-payment
+  mtls:
+    mode: STRICT
+  portLevelMtls:
+    8080:
+      mode: PERMISSIVE
