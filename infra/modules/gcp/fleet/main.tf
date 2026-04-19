@@ -22,25 +22,38 @@ resource "google_gke_hub_membership" "gke_members" {
 
 # 2. Enable Fleet Features (Managed Services)
 
+# Fleet Observability: centralised log + metric routing across all fleet clusters
+resource "google_gke_hub_feature" "fleetobservability" {
+  name     = "fleetobservability"
+  location = "global"
+  project  = var.project_id
+
+  spec {
+    fleetobservability {
+      logging_config {
+        default_config {
+          mode = "COPY"          # copy logs to each cluster's project
+        }
+        fleet_scope_logs_config {
+          mode = "MOVE"          # aggregate fleet-scoped logs to fleet host project
+        }
+      }
+    }
+  }
+}
+
 resource "google_gke_hub_feature" "servicemesh" {
   name     = "servicemesh"
   location = "global"
   project  = var.project_id
-}
 
-# Bind managed ASM to each GKE cluster
-resource "google_gke_hub_feature_membership" "service_mesh_gke" {
-  for_each   = var.clusters
-  project    = var.project_id
-  location   = "global"
-  feature    = google_gke_hub_feature.servicemesh.name
-  membership = google_gke_hub_membership.gke_members[each.key].membership_id
-
-  mesh {
-    management = "MANAGEMENT_AUTOMATIC"
+  # Fleet-level managed ASM — automatically installs and upgrades Istiod on every
+  # GKE cluster in the fleet. No per-cluster membership needed for managed mode.
+  fleet_default_member_config {
+    mesh {
+      management = "MANAGEMENT_AUTOMATIC"
+    }
   }
-
-  depends_on = [google_gke_hub_feature.servicemesh]
 }
 
 resource "google_gke_hub_feature" "configmanagement" {

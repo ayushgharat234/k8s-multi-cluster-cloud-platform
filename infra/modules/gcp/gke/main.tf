@@ -92,7 +92,7 @@ resource "google_container_cluster" "primary" {
   }
 
   logging_config {
-    enable_components = ["SYSTEM_COMPONENTS", "WORKLOADS"]
+    enable_components = ["SYSTEM_COMPONENTS"]
   }
 
   monitoring_config {

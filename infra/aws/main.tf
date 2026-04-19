@@ -74,8 +74,8 @@ module "eks_spoke" {
   subnet_ids       = module.vpc.private_subnet_ids
   kms_key_arn      = module.kms.eks_secret_key_arn
   ebs_kms_key_arn  = module.kms.eks_ebs_key_arn
-  instance_type        = "t3.small"
-  desired_capacity     = 1
+  instance_type        = "t3.micro"
+  desired_capacity     = 2
   allowed_public_cidrs = var.eks_allowed_cidrs
 }
 
