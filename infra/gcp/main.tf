@@ -297,6 +297,56 @@ resource "google_artifact_registry_repository_iam_member" "spoke_node_reader" {
   member     = "serviceAccount:${module.gke_spoke.node_sa_email}"
 }
 
+# --- EKS GAR PULLER (EKS nodes cannot use GKE WI, so we use a dedicated SA key
+#     stored in Secret Manager — no static files, rotatable, auditable) ---
+resource "google_service_account" "eks_puller_sa" {
+  provider     = google.control
+  account_id   = "eks-gar-puller"
+  display_name = "EKS → GAR image puller (catalog)"
+  project      = var.control_plane_project_id
+}
+
+resource "google_artifact_registry_repository_iam_member" "eks_puller_reader" {
+  provider   = google.control
+  project    = var.control_plane_project_id
+  location   = var.region
+  repository = google_artifact_registry_repository.images.name
+  role       = "roles/artifactregistry.reader"
+  member     = "serviceAccount:${google_service_account.eks_puller_sa.email}"
+}
+
+resource "google_service_account_key" "eks_puller_key" {
+  provider           = google.control
+  service_account_id = google_service_account.eks_puller_sa.name
+}
+
+resource "google_secret_manager_secret" "eks_puller_key" {
+  provider  = google.control
+  project   = var.control_plane_project_id
+  secret_id = "eks-gar-puller-key"
+
+  replication {
+    auto {}
+  }
+
+  depends_on = [google_project_service.control_apis]
+}
+
+resource "google_secret_manager_secret_version" "eks_puller_key" {
+  provider    = google.control
+  secret      = google_secret_manager_secret.eks_puller_key.id
+  secret_data = base64decode(google_service_account_key.eks_puller_key.private_key)
+}
+
+# CI SA needs to read this secret to populate the EKS pull secret in pipelines if needed
+resource "google_secret_manager_secret_iam_member" "ci_reads_puller_key" {
+  provider  = google.control
+  project   = var.control_plane_project_id
+  secret_id = google_secret_manager_secret.eks_puller_key.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${module.identity.service_account_email}"
+}
+
 # --- PAYMENT WORKLOAD IDENTITY ---
 # The payment service runs on GKE and calls GCP Secret Manager via Workload Identity.
 # This GCP SA is what the K8s SA (payment-sa) impersonates at runtime.

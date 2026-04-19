@@ -23,6 +23,8 @@ spec:
         app: storefront-catalog
     spec:
       serviceAccountName: catalog-sa
+      imagePullSecrets:
+        - name: google-gar-secret
       containers:
       - name: catalog
         image: storefront-catalog
