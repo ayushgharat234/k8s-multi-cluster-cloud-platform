@@ -92,7 +92,8 @@ steps:
           --keyversion-location=us-central1 \
           --keyversion-keyring=opsnexus-cluster-ring \
           --keyversion-key=cosign-key \
-          --keyversion=1
+          --keyversion=1 \
+          --public-key-id-override="projects/$PROJECT_ID/locations/us-central1/keyRings/opsnexus-cluster-ring/cryptoKeys/cosign-key"
     waitFor: [push]
 
   # ── Cloud Deploy Release ───────────────────────────────────────────────────
