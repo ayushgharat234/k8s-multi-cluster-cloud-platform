@@ -32,7 +32,10 @@ spec:
         image: storefront-frontend
         env:
         - name: CATALOG_URL
-          value: "http://PLACEHOLDER_EKS_LB:8080"
+          valueFrom:
+            configMapKeyRef:
+              name: catalog-endpoint
+              key: url
         ports:
         - containerPort: 80
         securityContext:
