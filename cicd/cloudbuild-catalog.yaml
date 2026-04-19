@@ -117,7 +117,7 @@ steps:
 
         # Workload Identity Federation: exchange GCP OIDC token for AWS credentials
         AWS_ROLE_ARN=$$(gcloud secrets versions access latest \
-          --secret=aws-ecr-role-arn --project=$PROJECT_ID)
+          --secret=aws-ecr-role-arn --project=$PROJECT_ID | tr -d '\r\n')
 
         OIDC_TOKEN=$$(gcloud auth print-identity-token \
           --audiences="$$AWS_ROLE_ARN")
