@@ -1,7 +1,7 @@
 FROM nginx:1.27-alpine
 RUN apk add --no-cache gettext && \
-    mkdir -p /tmp/nginx/client_body /tmp/nginx/proxy /tmp/nginx/fastcgi && \
-    chown -R nginx:nginx /tmp/nginx /var/cache/nginx && \
+    mkdir -p /tmp/nginx/client_body /tmp/nginx/proxy /tmp/nginx/fastcgi /tmp/nginx/uwsgi /tmp/nginx/scgi && \
+    chown -R nginx:nginx /tmp/nginx && \
     chmod -R 755 /tmp/nginx
 COPY nginx.conf /etc/nginx/templates/default.conf.template
 COPY src/index.html /usr/share/nginx/html/index.html
