@@ -74,7 +74,9 @@ resource "google_project_iam_member" "control_roles" {
     "roles/monitoring.admin",              # Cloud Monitoring configuration
     "roles/serviceusage.serviceUsageAdmin", # Enable GCP APIs
     "roles/clouddeploy.releaser",           # Create Cloud Deploy releases
-    "roles/clouddeploy.viewer"              # Read Cloud Deploy pipeline state
+    "roles/clouddeploy.viewer",             # Read Cloud Deploy pipeline state
+    "roles/gkehub.gatewayEditor",          # Connect Gateway kubectl access to fleet clusters
+    "roles/gkehub.viewer"                  # Read fleet memberships (required by gatewayEditor)
   ])
   project = var.project_id
   role    = each.key

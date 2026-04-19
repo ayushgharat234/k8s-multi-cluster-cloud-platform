@@ -1,0 +1,32 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: pdb-frontend
+  namespace: nexus-app
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: storefront-frontend
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: pdb-payment
+  namespace: nexus-app
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: storefront-payment
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: pdb-catalog
+  namespace: nexus-app
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: storefront-catalog

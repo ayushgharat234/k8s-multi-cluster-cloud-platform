@@ -7,8 +7,8 @@ spec:
   hard:
     pods: "20"
     requests.cpu: "2"
-    requests.memory: 2Gi
-    limits.cpu: "4"
-    limits.memory: 4Gi
+    requests.memory: 4Gi
+    limits.cpu: "8"
+    limits.memory: 8Gi
     services.loadbalancers: "2"
     secrets: "20"

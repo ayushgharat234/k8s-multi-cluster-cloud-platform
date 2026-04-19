@@ -9,4 +9,4 @@ EXPOSE 80
 USER nginx
 HEALTHCHECK --interval=15s --timeout=3s --start-period=5s --retries=3 \
   CMD wget -qO- http://localhost:80/health || exit 1
-CMD ["/bin/sh", "-c", "envsubst '${CATALOG_URL}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
+CMD ["/bin/sh", "-c", "envsubst '${CATALOG_URL}' < /etc/nginx/templates/default.conf.template > /tmp/nginx/nginx.conf && nginx -c /tmp/nginx/nginx.conf -g 'daemon off;'"]
