@@ -1,4 +1,4 @@
-# OpsNexus: Multi-Cloud Internal Developer Platform
+# Multi-Cloud Internal Developer Platform
 
 ![Status](https://img.shields.io/badge/Status-Elite-blueviolet?style=for-the-badge)
 ![Clouds](https://img.shields.io/badge/Clouds-GCP_%7C_AWS-0078d4?style=for-the-badge&logo=googlecloud)
