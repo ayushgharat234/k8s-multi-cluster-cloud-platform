@@ -54,8 +54,12 @@ output "gke_secret_key_id" {
   value       = module.kms.gke_secret_key_id
 }
 
-# ─── VPN (pass to infra/aws as gcp_vpn_gateway_ip) ───────────────────────────
+# ─── VPN — both interface IPs needed (interface 0 → CGW1, interface 1 → CGW2) ─
 output "gcp_vpn_gateway_ip" {
-  description = "External IP of GCP HA VPN Gateway interface 0 — pass to infra/aws as gcp_vpn_gateway_ip."
+  description = "External IP of GCP HA VPN Gateway interface 0 — pass to infra/aws as gcp_vpn_interface_0_ip."
   value       = module.vpn_data.vpn_gateway_ip
+}
+output "gcp_vpn_gateway_ip_1" {
+  description = "External IP of GCP HA VPN Gateway interface 1 — pass to infra/aws as gcp_vpn_interface_1_ip."
+  value       = module.vpn_data.vpn_gateway_ip_1
 }

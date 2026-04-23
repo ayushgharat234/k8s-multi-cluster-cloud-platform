@@ -44,8 +44,46 @@ variable "gcp_ci_sa_unique_id" {
   type        = string
 }
 
-variable "gcp_vpn_gateway_ip" {
-  description = "External IP of the GCP HA VPN Gateway interface 0. Obtain from: cd infra/gcp && terraform output gcp_vpn_gateway_ip"
+# ── Site-to-Site VPN — GCP HA VPN Gateway IPs ─────────────────────────────────
+# Obtained after Phase 1 (terraform apply -target="module.vpn_data" in infra/gcp):
+#   gcp_vpn_interface_0_ip = terraform -chdir=infra/gcp output gcp_vpn_gateway_ip
+#   gcp_vpn_interface_1_ip = terraform -chdir=infra/gcp output gcp_vpn_gateway_ip_1
+variable "gcp_vpn_interface_0_ip" {
+  description = "External IP of GCP HA VPN Gateway interface 0. Used as Customer Gateway 1."
   type        = string
+  default     = ""
+}
+variable "gcp_vpn_interface_1_ip" {
+  description = "External IP of GCP HA VPN Gateway interface 1. Used as Customer Gateway 2."
+  type        = string
+  default     = ""
+}
+
+# ── Pre-defined PSKs (4 tunnels = 4 PSKs) ─────────────────────────────────────
+# Choose strong secrets (8-64 ASCII chars) BEFORE applying.
+# Paste the SAME values into infra/gcp/terraform.tfvars under aws_conn*_t*_psk.
+# Store secrets out of git (use .env + TF_VAR_* or a secrets manager).
+variable "vpn_conn1_t1_psk" {
+  description = "PSK for connection 1, tunnel 1. Same as aws_conn1_t1_psk in infra/gcp."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+variable "vpn_conn1_t2_psk" {
+  description = "PSK for connection 1, tunnel 2. Same as aws_conn1_t2_psk in infra/gcp."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+variable "vpn_conn2_t1_psk" {
+  description = "PSK for connection 2, tunnel 1. Same as aws_conn2_t1_psk in infra/gcp."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+variable "vpn_conn2_t2_psk" {
+  description = "PSK for connection 2, tunnel 2. Same as aws_conn2_t2_psk in infra/gcp."
+  type        = string
+  sensitive   = true
   default     = ""
 }

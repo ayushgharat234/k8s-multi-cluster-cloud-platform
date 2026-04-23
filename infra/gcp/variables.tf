@@ -78,6 +78,12 @@ variable "iap_members" {
   default     = []
 }
 
+variable "organization" {
+  description = "Organization name embedded in CA subject fields."
+  type        = string
+  default     = "OpsNexus"
+}
+
 variable "master_authorized_cidr_blocks" {
   description = "CIDR blocks allowed to reach the GKE API servers (e.g. VPN or bastion IP)."
   type = list(object({
@@ -126,38 +132,93 @@ variable "subnet_cidr"  { default = "10.0.0.0/20" }
 variable "pod_cidr"     { default = "10.1.0.0/16" }
 variable "service_cidr" { default = "10.2.0.0/20" }
 
-# --- AWS VPN tunnel values (phase 3 — pass from infra/aws terraform output) ---
-variable "aws_vpn_tunnel1_address" {
-  type    = string
-  default = ""
+# ─── AWS VPN tunnel values (phase 3 — fill from infra/aws terraform output after phase 2) ───
+# Connection 1 (TGW ↔ CGW1 / GCP interface 0) — GCP tunnels 1 & 2
+variable "aws_conn1_t1_outside_ip" {
+  description = "AWS outside IP for conn1/tunnel1 (terraform output vpn_conn1_t1_outside_ip)."
+  type        = string
+  default     = ""
 }
-variable "aws_vpn_tunnel1_psk" {
-  type      = string
-  default   = ""
-  sensitive = true
+variable "aws_conn1_t1_psk" {
+  description = "PSK for conn1/tunnel1. Same value as vpn_conn1_t1_psk in infra/aws/terraform.tfvars."
+  type        = string
+  default     = ""
+  sensitive   = true
 }
-variable "aws_vpn_tunnel1_cgw_inside_address" {
-  type    = string
-  default = ""
+variable "aws_conn1_t1_cgw_inside" {
+  description = "GCP BGP IP /30 for conn1/tunnel1 (terraform output vpn_conn1_t1_cgw_inside_address + '/30')."
+  type        = string
+  default     = ""
 }
-variable "aws_vpn_tunnel1_vgw_inside_address" {
-  type    = string
-  default = ""
+variable "aws_conn1_t1_vgw_inside" {
+  description = "TGW BGP peer IP for conn1/tunnel1 (terraform output vpn_conn1_t1_vgw_inside_address)."
+  type        = string
+  default     = ""
 }
-variable "aws_vpn_tunnel2_address" {
-  type    = string
-  default = ""
+
+variable "aws_conn1_t2_outside_ip" {
+  description = "AWS outside IP for conn1/tunnel2 (terraform output vpn_conn1_t2_outside_ip)."
+  type        = string
+  default     = ""
 }
-variable "aws_vpn_tunnel2_psk" {
-  type      = string
-  default   = ""
-  sensitive = true
+variable "aws_conn1_t2_psk" {
+  description = "PSK for conn1/tunnel2. Same value as vpn_conn1_t2_psk in infra/aws/terraform.tfvars."
+  type        = string
+  default     = ""
+  sensitive   = true
 }
-variable "aws_vpn_tunnel2_cgw_inside_address" {
-  type    = string
-  default = ""
+variable "aws_conn1_t2_cgw_inside" {
+  description = "GCP BGP IP /30 for conn1/tunnel2 (terraform output vpn_conn1_t2_cgw_inside_address + '/30')."
+  type        = string
+  default     = ""
 }
-variable "aws_vpn_tunnel2_vgw_inside_address" {
-  type    = string
-  default = ""
+variable "aws_conn1_t2_vgw_inside" {
+  description = "TGW BGP peer IP for conn1/tunnel2 (terraform output vpn_conn1_t2_vgw_inside_address)."
+  type        = string
+  default     = ""
+}
+
+# Connection 2 (TGW ↔ CGW2 / GCP interface 1) — GCP tunnels 3 & 4
+variable "aws_conn2_t1_outside_ip" {
+  description = "AWS outside IP for conn2/tunnel1 (terraform output vpn_conn2_t1_outside_ip)."
+  type        = string
+  default     = ""
+}
+variable "aws_conn2_t1_psk" {
+  description = "PSK for conn2/tunnel1. Same value as vpn_conn2_t1_psk in infra/aws/terraform.tfvars."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+variable "aws_conn2_t1_cgw_inside" {
+  description = "GCP BGP IP /30 for conn2/tunnel1 (terraform output vpn_conn2_t1_cgw_inside_address + '/30')."
+  type        = string
+  default     = ""
+}
+variable "aws_conn2_t1_vgw_inside" {
+  description = "TGW BGP peer IP for conn2/tunnel1 (terraform output vpn_conn2_t1_vgw_inside_address)."
+  type        = string
+  default     = ""
+}
+
+variable "aws_conn2_t2_outside_ip" {
+  description = "AWS outside IP for conn2/tunnel2 (terraform output vpn_conn2_t2_outside_ip)."
+  type        = string
+  default     = ""
+}
+variable "aws_conn2_t2_psk" {
+  description = "PSK for conn2/tunnel2. Same value as vpn_conn2_t2_psk in infra/aws/terraform.tfvars."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+variable "aws_conn2_t2_cgw_inside" {
+  description = "GCP BGP IP /30 for conn2/tunnel2 (terraform output vpn_conn2_t2_cgw_inside_address + '/30')."
+  type        = string
+  default     = ""
+}
+variable "aws_conn2_t2_vgw_inside" {
+  description = "TGW BGP peer IP for conn2/tunnel2 (terraform output vpn_conn2_t2_vgw_inside_address)."
+  type        = string
+  default     = ""
 }

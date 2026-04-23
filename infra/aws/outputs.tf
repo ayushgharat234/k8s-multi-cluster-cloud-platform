@@ -24,30 +24,54 @@ output "ci_role_arn" {
   value       = module.identity.ci_role_arn
 }
 
-# --- VPN outputs (only populated when gcp_vpn_gateway_ip is set) ---
-output "vpn_tunnel1_address" {
-  value = length(module.vpn) > 0 ? module.vpn[0].tunnel1_address : ""
+# --- VPN outputs (only populated when gcp_vpn_interface_0_ip is set) ---
+# Connection 1 (TGW ↔ CGW1 / GCP interface 0) — tunnel-1 & tunnel-2 on GCP side
+output "vpn_conn1_t1_outside_ip" {
+  value = length(module.vpn) > 0 ? module.vpn[0].conn1_t1_outside_ip : ""
 }
-output "vpn_tunnel1_preshared_key" {
-  value     = length(module.vpn) > 0 ? module.vpn[0].tunnel1_preshared_key : ""
-  sensitive = true
+output "vpn_conn1_t1_cgw_inside_address" {
+  description = "Append /30 when setting aws_conn1_t1_cgw_inside in infra/gcp/terraform.tfvars."
+  value = length(module.vpn) > 0 ? module.vpn[0].conn1_t1_cgw_inside_address : ""
 }
-output "vpn_tunnel1_cgw_inside_address" {
-  value = length(module.vpn) > 0 ? module.vpn[0].tunnel1_cgw_inside_address : ""
+output "vpn_conn1_t1_vgw_inside_address" {
+  value = length(module.vpn) > 0 ? module.vpn[0].conn1_t1_vgw_inside_address : ""
 }
-output "vpn_tunnel1_vgw_inside_address" {
-  value = length(module.vpn) > 0 ? module.vpn[0].tunnel1_vgw_inside_address : ""
+
+output "vpn_conn1_t2_outside_ip" {
+  value = length(module.vpn) > 0 ? module.vpn[0].conn1_t2_outside_ip : ""
 }
-output "vpn_tunnel2_address" {
-  value = length(module.vpn) > 0 ? module.vpn[0].tunnel2_address : ""
+output "vpn_conn1_t2_cgw_inside_address" {
+  description = "Append /30 when setting aws_conn1_t2_cgw_inside in infra/gcp/terraform.tfvars."
+  value = length(module.vpn) > 0 ? module.vpn[0].conn1_t2_cgw_inside_address : ""
 }
-output "vpn_tunnel2_preshared_key" {
-  value     = length(module.vpn) > 0 ? module.vpn[0].tunnel2_preshared_key : ""
-  sensitive = true
+output "vpn_conn1_t2_vgw_inside_address" {
+  value = length(module.vpn) > 0 ? module.vpn[0].conn1_t2_vgw_inside_address : ""
 }
-output "vpn_tunnel2_cgw_inside_address" {
-  value = length(module.vpn) > 0 ? module.vpn[0].tunnel2_cgw_inside_address : ""
+
+# Connection 2 (TGW ↔ CGW2 / GCP interface 1) — tunnel-3 & tunnel-4 on GCP side
+output "vpn_conn2_t1_outside_ip" {
+  value = length(module.vpn) > 0 ? module.vpn[0].conn2_t1_outside_ip : ""
 }
-output "vpn_tunnel2_vgw_inside_address" {
-  value = length(module.vpn) > 0 ? module.vpn[0].tunnel2_vgw_inside_address : ""
+output "vpn_conn2_t1_cgw_inside_address" {
+  description = "Append /30 when setting aws_conn2_t1_cgw_inside in infra/gcp/terraform.tfvars."
+  value = length(module.vpn) > 0 ? module.vpn[0].conn2_t1_cgw_inside_address : ""
+}
+output "vpn_conn2_t1_vgw_inside_address" {
+  value = length(module.vpn) > 0 ? module.vpn[0].conn2_t1_vgw_inside_address : ""
+}
+
+output "vpn_conn2_t2_outside_ip" {
+  value = length(module.vpn) > 0 ? module.vpn[0].conn2_t2_outside_ip : ""
+}
+output "vpn_conn2_t2_cgw_inside_address" {
+  description = "Append /30 when setting aws_conn2_t2_cgw_inside in infra/gcp/terraform.tfvars."
+  value = length(module.vpn) > 0 ? module.vpn[0].conn2_t2_cgw_inside_address : ""
+}
+output "vpn_conn2_t2_vgw_inside_address" {
+  value = length(module.vpn) > 0 ? module.vpn[0].conn2_t2_vgw_inside_address : ""
+}
+
+output "vpn_transit_gateway_id" {
+  description = "Transit Gateway ID — reference for additional VPC or Direct Connect attachments."
+  value = length(module.vpn) > 0 ? module.vpn[0].transit_gateway_id : ""
 }

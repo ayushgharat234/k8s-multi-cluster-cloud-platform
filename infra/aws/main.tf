@@ -90,15 +90,25 @@ module "eks_spoke" {
 #   terraform apply -var="gcp_vpn_gateway_ip=<IP>" (in infra/aws)
 #   Pass AWS tunnel outputs back to infra/gcp as vpn_* variables
 module "vpn" {
-  count  = var.gcp_vpn_gateway_ip != "" ? 1 : 0
+  count  = var.gcp_vpn_interface_0_ip != "" ? 1 : 0
   source = "../modules/aws/vpn"
 
-  env_name                 = var.env_name
-  vpc_id                   = module.vpc.vpc_id
-  gcp_vpn_gateway_ip       = var.gcp_vpn_gateway_ip
-  private_route_table_ids  = [module.vpc.private_route_table_id]
+  env_name                  = var.env_name
+  vpc_id                    = module.vpc.vpc_id
+  private_subnet_ids        = module.vpc.private_subnet_ids
+  private_route_table_ids   = [module.vpc.private_route_table_id]
   cluster_security_group_id = module.eks_spoke.cluster_security_group_id
-  gcp_cidr_ranges          = ["10.16.0.0/20", "10.17.0.0/16", "10.18.0.0/20"]
+  gcp_cidr_ranges           = ["10.16.0.0/20", "10.17.0.0/16", "10.18.0.0/20"]
+
+  # One CGW per GCP HA VPN interface for 4-tunnel active/active ECMP
+  gcp_vpn_interface_0_ip = var.gcp_vpn_interface_0_ip
+  gcp_vpn_interface_1_ip = var.gcp_vpn_interface_1_ip
+
+  # Pre-defined PSKs — same values must be set in infra/gcp/terraform.tfvars
+  conn1_t1_psk = var.vpn_conn1_t1_psk
+  conn1_t2_psk = var.vpn_conn1_t2_psk
+  conn2_t1_psk = var.vpn_conn2_t1_psk
+  conn2_t2_psk = var.vpn_conn2_t2_psk
 }
 
 data "aws_caller_identity" "current" {}

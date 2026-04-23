@@ -151,6 +151,29 @@ module "kms" {
   depends_on = [time_sleep.wait_for_apis]
 }
 
+# --- CAS (Centralized in Control Project) ---
+# Root CA + three subordinate CAs (mesh, internal-tls, workload).
+# Inactive until wired to ASM or cert-manager; provisioning now ensures the
+# PKI hierarchy is in place before workloads need it.
+module "cas" {
+  source                   = "../modules/gcp/cas"
+  project_id               = var.control_plane_project_id
+  region                   = var.region
+  env_name                 = var.env_name
+  organization             = var.organization
+  ci_service_account_email = module.identity.service_account_email
+  deletion_protection      = false
+
+  providers = {
+    google = google.control
+  }
+
+  depends_on = [
+    time_sleep.wait_for_apis,
+    module.identity,
+  ]
+}
+
 # --- IDENTITY (Centralized in Control Project) ---
 module "identity" {
   source                    = "../modules/gcp/identity"
@@ -414,10 +437,9 @@ resource "google_service_account_iam_member" "cloudbuild_use_ci_sa" {
   depends_on         = [module.identity]
 }
 
-# --- SITE-TO-SITE VPN TO AWS (Data VPC — where GKE spoke lives) ---
-# Phase 1: apply -target="module.vpn_data" to create gateway and get its IP.
-# Phase 2: pass IP to infra/aws, apply AWS VPN, get tunnel outputs.
-# Phase 3: pass tunnel values as vpn_* variables here, full apply.
+# ─── SITE-TO-SITE VPN TO AWS (Data VPC — where GKE spoke lives) ──────────────────
+# 4-tunnel HA VPN using Transit Gateway on AWS side for ECMP (99.99% SLA).
+# Deployment uses a 3-phase workflow — see infra/gcp/terraform.tfvars for details.
 module "vpn_data" {
   source = "../modules/gcp/vpn"
 
@@ -427,14 +449,27 @@ module "vpn_data" {
   pod_cidr     = "10.17.0.0/16"
   service_cidr = "10.18.0.0/20"
 
-  aws_tunnel1_address             = var.aws_vpn_tunnel1_address
-  aws_tunnel1_psk                 = var.aws_vpn_tunnel1_psk
-  aws_tunnel1_cgw_inside_address  = var.aws_vpn_tunnel1_cgw_inside_address
-  aws_tunnel1_vgw_inside_address  = var.aws_vpn_tunnel1_vgw_inside_address
-  aws_tunnel2_address             = var.aws_vpn_tunnel2_address
-  aws_tunnel2_psk                 = var.aws_vpn_tunnel2_psk
-  aws_tunnel2_cgw_inside_address  = var.aws_vpn_tunnel2_cgw_inside_address
-  aws_tunnel2_vgw_inside_address  = var.aws_vpn_tunnel2_vgw_inside_address
+  # Connection 1 (GCP interface 0 ↔ AWS Transit Gateway via CGW1) — tunnels 1 & 2
+  aws_conn1_t1_outside_ip = var.aws_conn1_t1_outside_ip
+  aws_conn1_t1_psk        = var.aws_conn1_t1_psk
+  aws_conn1_t1_cgw_inside = var.aws_conn1_t1_cgw_inside
+  aws_conn1_t1_vgw_inside = var.aws_conn1_t1_vgw_inside
+
+  aws_conn1_t2_outside_ip = var.aws_conn1_t2_outside_ip
+  aws_conn1_t2_psk        = var.aws_conn1_t2_psk
+  aws_conn1_t2_cgw_inside = var.aws_conn1_t2_cgw_inside
+  aws_conn1_t2_vgw_inside = var.aws_conn1_t2_vgw_inside
+
+  # Connection 2 (GCP interface 1 ↔ AWS Transit Gateway via CGW2) — tunnels 3 & 4
+  aws_conn2_t1_outside_ip = var.aws_conn2_t1_outside_ip
+  aws_conn2_t1_psk        = var.aws_conn2_t1_psk
+  aws_conn2_t1_cgw_inside = var.aws_conn2_t1_cgw_inside
+  aws_conn2_t1_vgw_inside = var.aws_conn2_t1_vgw_inside
+
+  aws_conn2_t2_outside_ip = var.aws_conn2_t2_outside_ip
+  aws_conn2_t2_psk        = var.aws_conn2_t2_psk
+  aws_conn2_t2_cgw_inside = var.aws_conn2_t2_cgw_inside
+  aws_conn2_t2_vgw_inside = var.aws_conn2_t2_vgw_inside
 
   providers = {
     google = google.data
